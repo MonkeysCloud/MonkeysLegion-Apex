@@ -1,0 +1,43 @@
+{
+    "name": "monkeyscloud/monkeyslegion-apex",
+    "description": "AI Orchestration Engine for PHP 8.4 — Multi-model routing, pipelines, guardrails, structured output, and agents in one package.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MonkeysCloud",
+            "email": "jorge@monkeys.cloud"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "psr/simple-cache": "^3.0",
+        "psr/log": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "suggest": {
+        "monkeyscloud/monkeyslegion-cache": "Required for semantic caching middleware",
+        "monkeyscloud/monkeyslegion-telemetry": "Required for OpenTelemetry tracing",
+        "ext-pcntl": "Required for parallel tool execution"
+    },
+    "autoload": {
+        "psr-4": {
+            "MonkeysLegion\\Apex\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MonkeysLegion\\Apex\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
