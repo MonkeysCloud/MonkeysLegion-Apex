@@ -126,6 +126,7 @@ final class Crew
 
         while ($iterations < $this->maxIterations) {
             foreach ($this->agents as $agent) {
+                // Check before each agent to stop mid-cycle at the exact limit
                 if ($iterations >= $this->maxIterations) {
                     break 2;
                 }

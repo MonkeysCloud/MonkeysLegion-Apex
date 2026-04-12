@@ -56,7 +56,7 @@ final class CacheMiddleware implements MiddlewareInterface
             fn($m) => $m->role->value . ':' . $m->content,
             $context->messages,
         ));
-        $optionsHash = !empty($context->options) ? json_encode($context->options) : '';
+        $optionsHash = !empty($context->options) ? json_encode($context->options, JSON_THROW_ON_ERROR) : '';
         return $this->prefix . hash('xxh128', $content . $context->model . $optionsHash);
     }
 }
