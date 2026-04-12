@@ -77,6 +77,9 @@ final class SummaryMemory implements MemoryInterface
         );
 
         $this->summary = ($this->summary ? $this->summary . "\n\n" : '') . $response->content;
-        $this->messages = [];
+
+        // Keep last 2 messages for continuity
+        $keepCount = min(2, count($this->messages));
+        $this->messages = array_slice($this->messages, -$keepCount);
     }
 }

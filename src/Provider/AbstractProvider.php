@@ -78,6 +78,8 @@ abstract class AbstractProvider implements ProviderInterface
                     CURLOPT_CONNECTTIMEOUT => 10,
                     CURLOPT_HTTPHEADER     => $this->buildHeaders(),
                     CURLOPT_CUSTOMREQUEST  => strtoupper($method),
+                    CURLOPT_SSL_VERIFYPEER => true,
+                    CURLOPT_SSL_VERIFYHOST => 2,
                 ]);
 
                 if (!empty($body)) {
@@ -160,6 +162,8 @@ abstract class AbstractProvider implements ProviderInterface
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_HTTPHEADER     => $this->buildHeaders(),
             CURLOPT_CUSTOMREQUEST  => strtoupper($method),
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_WRITEFUNCTION  => function ($ch, string $data) use (&$buffer): int {
                 $buffer .= $data;
                 return strlen($data);
@@ -224,7 +228,7 @@ abstract class AbstractProvider implements ProviderInterface
      */
     private function backoff(int $attempt): void
     {
-        $delay = min(2 ** ($attempt - 1), 8) + (mt_rand(0, 1000) / 1000);
+        $delay = min(2 ** ($attempt - 1), 8) + (random_int(0, 1000) / 1000);
         usleep((int) ($delay * 1_000_000));
     }
 }

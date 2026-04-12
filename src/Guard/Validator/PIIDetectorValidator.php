@@ -26,10 +26,10 @@ final class PIIDetectorValidator implements GuardInterface
     /** @var array<string, string> Entity → regex pattern */
     private const array PATTERNS = [
         'email'       => '/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/',
-        'phone'       => '/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/',
+        'phone'       => '/(?:\+?\d{1,3}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}\b/',
         'ssn'         => '/\b\d{3}-\d{2}-\d{4}\b/',
         'credit_card' => '/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/',
-        'ip_address'  => '/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/',
+        'ip_address'  => '/\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/',
     ];
 
     /**
