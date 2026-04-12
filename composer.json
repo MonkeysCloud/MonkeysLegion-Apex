@@ -21,9 +21,9 @@
         "phpunit/phpunit": "^11.0"
     },
     "suggest": {
-        "monkeyscloud/monkeyslegion-cache": "Required for semantic caching middleware",
+        "monkeyscloud/monkeyslegion-cache": "^2.0 — Required for semantic caching middleware",
         "monkeyscloud/monkeyslegion-cli": "Required for ai:chat and ai:costs console commands",
-        "monkeyscloud/monkeyslegion-telemetry": "Required for distributed tracing, metrics, and structured logging",
+        "monkeyscloud/monkeyslegion-telemetry": "^2.0 — Required for distributed tracing, metrics, and structured logging",
         "ext-pcntl": "Required for parallel tool execution"
     },
     "autoload": {

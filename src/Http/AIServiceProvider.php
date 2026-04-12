@@ -29,6 +29,14 @@ use MonkeysLegion\Apex\Cost\PricingRegistry;
  */
 final class AIServiceProvider
 {
+    /** @var list<string> Allowed provider class names */
+    private const array ALLOWED_PROVIDERS = [
+        \MonkeysLegion\Apex\Provider\Anthropic\AnthropicProvider::class,
+        \MonkeysLegion\Apex\Provider\OpenAI\OpenAIProvider::class,
+        \MonkeysLegion\Apex\Provider\Google\GoogleProvider::class,
+        \MonkeysLegion\Apex\Provider\Ollama\OllamaProvider::class,
+    ];
+
     /** @var array<string, mixed> */
     private readonly array $config;
 
@@ -58,7 +66,10 @@ final class AIServiceProvider
                 $providerClass = $this->config['provider'] ?? null;
                 $provider = null;
 
-                if ($providerClass !== null && class_exists($providerClass)) {
+                if ($providerClass !== null
+                    && class_exists($providerClass)
+                    && in_array($providerClass, self::ALLOWED_PROVIDERS, true)
+                ) {
                     $provider = new $providerClass(
                         apiKey: $this->config['api_key'] ?? '',
                         model:  $this->config['model'] ?? 'claude-sonnet-4',

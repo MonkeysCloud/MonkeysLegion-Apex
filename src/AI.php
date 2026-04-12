@@ -79,7 +79,7 @@ final class AI
         $response = $this->provider->chat($messages, $options);
 
         // Multi-step tool calling
-        $maxSteps = $options['maxSteps'] ?? 10;
+        $maxSteps = min($options['maxSteps'] ?? 10, 50);
         $step = 0;
         $allMessages = $messages;
 
@@ -90,8 +90,9 @@ final class AI
             // Execute tools and add results
             $results = $this->toolExecutor->executeAll($response->toolCalls);
             foreach ($results as $result) {
+                $encoded = json_encode($result->output, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
                 $allMessages[] = Message::tool(
-                    json_encode($result->output),
+                    $encoded,
                     $result->toolCallId,
                 );
             }

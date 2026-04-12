@@ -47,13 +47,13 @@ final class RetryMiddleware implements MiddlewareInterface
                     break;
                 }
 
-                // Only retry on retryable errors (429, 5xx)
-                if ($e->httpStatus !== 0 && $e->httpStatus < 429) {
+                // Only retry on retryable errors (429 rate limit, 5xx server errors, or unknown/0)
+                if ($e->httpStatus !== 0 && $e->httpStatus !== 429 && $e->httpStatus < 500) {
                     throw $e;
                 }
 
                 $delay = min($this->baseDelay * (2 ** ($attempt - 1)), $this->maxDelay);
-                $delay += mt_rand(0, 1000) / 1000;
+                $delay += random_int(0, 1000) / 1000;
                 usleep((int) ($delay * 1_000_000));
             }
         }

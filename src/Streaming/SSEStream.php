@@ -49,7 +49,7 @@ final class SSEStream
             if (str_starts_with($line, 'event:')) {
                 $eventType = trim(substr($line, 6));
             } elseif (str_starts_with($line, 'data:')) {
-                $data .= trim(substr($line, 5));
+                $data .= ($data !== '' ? "\n" : '') . trim(substr($line, 5));
             }
         }
 
