@@ -144,8 +144,10 @@ abstract class AbstractProvider implements ProviderInterface
     /**
      * Send streaming HTTP request, yields raw SSE data lines.
      *
-     * Uses a real-time write callback to yield SSE lines as they arrive
-     * instead of buffering the entire response.
+     * Lines are parsed incrementally in the write callback as data arrives,
+     * reducing memory allocation compared to buffering the raw response and
+     * splitting afterwards. The parsed lines are yielded after curl_exec
+     * completes (PHP cURL limitation — callbacks cannot yield from generators).
      *
      * @param array<string, mixed> $body
      * @return \Generator<string>

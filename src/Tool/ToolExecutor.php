@@ -120,8 +120,11 @@ final class ToolExecutor
                 $data = serialize($result);
                 socket_write($pair[1], $data, strlen($data));
                 socket_close($pair[1]);
-                // Use _exit to avoid running shutdown handlers
-                exit(0);
+                // Use posix_exit to avoid running PHP shutdown handlers/destructors
+                if (function_exists('posix_kill')) {
+                    posix_kill(getmypid(), 9);
+                }
+                exit(0); // @codeCoverageIgnore
             }
 
             // Parent process
@@ -132,7 +135,13 @@ final class ToolExecutor
         // Collect results from children
         foreach ($children as $child) {
             $data = '';
-            while (($chunk = socket_read($child['socket'], 65536)) !== false && $chunk !== '') {
+            // Set a read timeout to prevent infinite loops
+            socket_set_option($child['socket'], SOL_SOCKET, SO_RCVTIMEO, ['sec' => (int) $this->timeout, 'usec' => 0]);
+            while (true) {
+                $chunk = @socket_read($child['socket'], 65536);
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
                 $data .= $chunk;
             }
             socket_close($child['socket']);
