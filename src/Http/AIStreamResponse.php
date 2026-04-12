@@ -33,7 +33,9 @@ final class AIStreamResponse
      */
     public function sendHeaders(): void
     {
-        header("Content-Type: {$this->contentType}");
+        // Sanitize content type to prevent header injection
+        $safeContentType = preg_replace('/[\r\n]/', '', $this->contentType);
+        header("Content-Type: {$safeContentType}");
         header('Cache-Control: no-cache');
         header('Connection: keep-alive');
         header('X-Accel-Buffering: no');

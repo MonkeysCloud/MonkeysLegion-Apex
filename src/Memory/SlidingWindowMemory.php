@@ -77,12 +77,12 @@ final class SlidingWindowMemory implements MemoryInterface
     }
 
     /**
-     * Rough token estimate (~4 chars per token).
+     * Rough token estimate (~4 chars per token, using multibyte-safe length).
      */
     private function estimateTokens(): int
     {
         return (int) (array_sum(array_map(
-            fn(Message $m) => strlen($m->content),
+            fn(Message $m) => mb_strlen($m->content, 'UTF-8'),
             $this->messages,
         )) / 4);
     }

@@ -118,6 +118,8 @@ final class MCPClient
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => (int) $this->timeout,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
         $body = curl_exec($ch);

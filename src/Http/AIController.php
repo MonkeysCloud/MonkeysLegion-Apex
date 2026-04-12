@@ -44,9 +44,13 @@ abstract class AIController
 
         if (isset($body['messages']) && is_array($body['messages'])) {
             foreach ($body['messages'] as $msg) {
+                $role = \MonkeysLegion\Apex\Enum\Role::tryFrom($msg['role'] ?? '');
+                if ($role === null) {
+                    continue;
+                }
                 $messages[] = new Message(
-                    role: \MonkeysLegion\Apex\Enum\Role::from($msg['role']),
-                    content: $msg['content'],
+                    role: $role,
+                    content: $msg['content'] ?? '',
                 );
             }
         } elseif (isset($body['message'])) {

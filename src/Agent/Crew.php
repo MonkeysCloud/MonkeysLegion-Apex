@@ -120,19 +120,20 @@ final class Crew
      */
     private function runConversational(string $task): array
     {
-        $results = [];
-        $input   = $task;
-        $i       = 0;
+        $results    = [];
+        $input      = $task;
+        $iterations = 0;
 
-        while ($i < $this->maxIterations) {
+        while ($iterations < $this->maxIterations) {
             foreach ($this->agents as $agent) {
+                // Check before each agent to stop mid-cycle at the exact limit
+                if ($iterations >= $this->maxIterations) {
+                    break 2;
+                }
                 $response  = $agent->run($input);
                 $results[] = ['agent' => $agent->name, 'response' => $response];
                 $input     = $response->content;
-                $i++;
-                if ($i >= $this->maxIterations) {
-                    break;
-                }
+                $iterations++;
             }
         }
 

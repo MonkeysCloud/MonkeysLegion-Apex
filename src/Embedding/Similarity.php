@@ -75,8 +75,12 @@ final class Similarity
      */
     public static function dotProduct(array $a, array $b): float
     {
+        if (count($a) !== count($b)) {
+            return 0.0;
+        }
+
         $sum = 0.0;
-        for ($i = 0, $len = min(count($a), count($b)); $i < $len; $i++) {
+        for ($i = 0, $len = count($a); $i < $len; $i++) {
             $sum += $a[$i] * $b[$i];
         }
         return $sum;

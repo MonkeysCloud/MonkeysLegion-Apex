@@ -36,6 +36,13 @@ final class PromptInjectionValidator implements GuardInterface
         '/\[INST\]/i',
         '/<\|system\|>/i',
         '/\bACT\s+AS\b/i',
+        '/\bpretend\s+(?:you\s+are|to\s+be)\b/i',
+        '/\brole\s*play\s+as\b/i',
+        '/\bdo\s+not\s+follow\s+(?:your|the)\s+(?:rules|guidelines)\b/i',
+        '/\bnew\s+instructions?\s*:/i',
+        '/\b(?:bypass|circumvent|evade)\s+(?:the\s+)?(?:filter|safety|restriction)/i',
+        '/\bunrestricted\s+mode\b/i',
+        '/\bdev(?:eloper)?\s+mode\b/i',
     ];
 
     public function __construct(
