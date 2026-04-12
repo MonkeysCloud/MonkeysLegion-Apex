@@ -1,5 +1,17 @@
 <?php
 
+
+
+/**
+ * MonkeysLegion Apex
+ *
+ * @package   MonkeysLegion\Apex
+ * @author    MonkeysCloud <jorge@monkeys.cloud>
+ * @license   MIT
+ *
+ * @requires  PHP 8.4
+ */
+
 declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\Agent;
