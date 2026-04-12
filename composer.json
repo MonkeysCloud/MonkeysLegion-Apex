@@ -22,7 +22,8 @@
     },
     "suggest": {
         "monkeyscloud/monkeyslegion-cache": "Required for semantic caching middleware",
-        "monkeyscloud/monkeyslegion-telemetry": "Required for OpenTelemetry tracing",
+        "monkeyscloud/monkeyslegion-cli": "Required for ai:chat and ai:costs console commands",
+        "monkeyscloud/monkeyslegion-telemetry": "Required for distributed tracing, metrics, and structured logging",
         "ext-pcntl": "Required for parallel tool execution"
     },
     "autoload": {

@@ -62,12 +62,12 @@ final class MultiStepRunner
 
             // Execute each tool call
             foreach ($response->toolCalls as $tc) {
-                $result = $this->executor->execute($tc->name, $tc->arguments);
+                $result = $this->executor->execute($tc);
                 $messages[] = Message::tool(
-                    toolCallId: $tc->id,
-                    content: $result->success
+                    $result->success
                         ? (is_string($result->output) ? $result->output : json_encode($result->output))
                         : "Error: {$result->error}",
+                    $tc->id,
                 );
             }
         }

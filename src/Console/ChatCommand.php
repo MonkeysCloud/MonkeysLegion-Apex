@@ -15,43 +15,58 @@ declare(strict_types=1);
 namespace MonkeysLegion\Apex\Console;
 
 use MonkeysLegion\Apex\AI;
+use MonkeysLegion\Apex\DTO\Message;
 
 /**
- * Interactive AI chat console.
+ * Interactive AI chat CLI command.
+ *
+ * When MonkeysLegion CLI package is available, register this command via:
+ *   #[Command('ai:chat', 'Start an interactive AI chat session')]
+ *
+ * Usage:
+ *   php ml ai:chat
+ *   php ml ai:chat --model=claude-sonnet-4
  */
 final class ChatCommand
 {
     public function __construct(
-        private readonly AI     $ai,
-        private readonly string $system = 'You are a helpful assistant.',
+        private readonly AI $ai,
     ) {}
 
     /**
-     * Run interactive chat loop.
+     * Execute the interactive chat loop.
      *
      * @param resource $input  Input stream (default: STDIN).
      * @param resource $output Output stream (default: STDOUT).
      */
     public function execute($input = STDIN, $output = STDOUT): int
     {
-        fwrite($output, "MonkeysLegion Apex — Interactive Chat\n");
-        fwrite($output, "Type 'exit' or 'quit' to end.\n\n");
+        fwrite($output, "=== MonkeysLegion Apex — Interactive Chat ===\n");
+        fwrite($output, "Type \"exit\" or \"quit\" to end the session.\n\n");
 
-        while (true) {
-            fwrite($output, '> ');
-            $line = fgets($input);
+        /** @var list<Message> $history */
+        $history = [];
 
-            if ($line === false || in_array(trim($line), ['exit', 'quit', ''], true)) {
-                fwrite($output, "\nGoodbye!\n");
-                break;
+        while (($line = fgets($input)) !== false) {
+            $line = trim($line);
+
+            if ($line === '') {
+                continue;
             }
 
+            if (in_array(strtolower($line), ['exit', 'quit'], true)) {
+                fwrite($output, "Goodbye! 👋\n");
+                return 0;
+            }
+
+            $history[] = Message::user($line);
+
             try {
-                $response = $this->ai->generate(trim($line), system: $this->system);
-                fwrite($output, "\n{$response->content}\n\n");
-                fwrite($output, "[tokens: {$response->usage->totalTokens} | model: {$response->model}]\n\n");
+                $response = $this->ai->generate($history);
+                $history[] = Message::assistant($response->content);
+                fwrite($output, "\nAI: {$response->content}\n\n");
             } catch (\Throwable $e) {
-                fwrite($output, "\nError: {$e->getMessage()}\n\n");
+                fwrite($output, "Error: {$e->getMessage()}\n");
             }
         }
 
