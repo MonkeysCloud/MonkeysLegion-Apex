@@ -39,7 +39,7 @@ final class MCPClient
             'capabilities'    => [],
             'clientInfo'      => [
                 'name'    => 'MonkeysLegion-Apex',
-                'version' => '1.0.0',
+                'version' => '2.0.0',
             ],
         ]);
     }
@@ -117,6 +117,7 @@ final class MCPClient
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => (int) $this->timeout,
+            CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,

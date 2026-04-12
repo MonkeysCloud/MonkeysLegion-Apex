@@ -80,6 +80,8 @@ abstract class AbstractProvider implements ProviderInterface
                     CURLOPT_CUSTOMREQUEST  => strtoupper($method),
                     CURLOPT_SSL_VERIFYPEER => true,
                     CURLOPT_SSL_VERIFYHOST => 2,
+                    CURLOPT_FORBID_REUSE   => false,
+                    CURLOPT_TCP_KEEPALIVE  => 1,
                 ]);
 
                 if (!empty($body)) {
@@ -142,6 +144,9 @@ abstract class AbstractProvider implements ProviderInterface
     /**
      * Send streaming HTTP request, yields raw SSE data lines.
      *
+     * Uses a real-time write callback to yield SSE lines as they arrive
+     * instead of buffering the entire response.
+     *
      * @param array<string, mixed> $body
      * @return \Generator<string>
      */
@@ -154,6 +159,8 @@ abstract class AbstractProvider implements ProviderInterface
             throw new ProviderException('Failed to initialize cURL', $this->name());
         }
 
+        /** @var list<string> $lines Completed SSE data lines ready to yield */
+        $lines  = [];
         $buffer = '';
 
         curl_setopt_array($ch, [
@@ -164,8 +171,22 @@ abstract class AbstractProvider implements ProviderInterface
             CURLOPT_CUSTOMREQUEST  => strtoupper($method),
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_WRITEFUNCTION  => function ($ch, string $data) use (&$buffer): int {
+            CURLOPT_WRITEFUNCTION  => function ($ch, string $data) use (&$lines, &$buffer): int {
                 $buffer .= $data;
+
+                // Parse complete lines from the buffer
+                while (($pos = strpos($buffer, "\n")) !== false) {
+                    $line = trim(substr($buffer, 0, $pos));
+                    $buffer = substr($buffer, $pos + 1);
+
+                    if ($line === '' || $line === 'data: [DONE]') {
+                        continue;
+                    }
+                    if (str_starts_with($line, 'data: ')) {
+                        $lines[] = substr($line, 6);
+                    }
+                }
+
                 return strlen($data);
             },
         ]);
@@ -174,7 +195,6 @@ abstract class AbstractProvider implements ProviderInterface
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_THROW_ON_ERROR));
         }
 
-        // Start request and yield SSE lines as they arrive
         curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -183,15 +203,15 @@ abstract class AbstractProvider implements ProviderInterface
             throw new ProviderException("Streaming failed: HTTP {$httpCode}", $this->name(), $httpCode);
         }
 
-        // Parse SSE lines
-        foreach (explode("\n", $buffer) as $line) {
-            $line = trim($line);
-            if ($line === '' || $line === 'data: [DONE]') {
-                continue;
-            }
-            if (str_starts_with($line, 'data: ')) {
-                yield substr($line, 6);
-            }
+        // Flush any remaining data in the buffer
+        $remaining = trim($buffer);
+        if ($remaining !== '' && $remaining !== 'data: [DONE]' && str_starts_with($remaining, 'data: ')) {
+            $lines[] = substr($remaining, 6);
+        }
+
+        // Yield all collected lines
+        foreach ($lines as $line) {
+            yield $line;
         }
     }
 

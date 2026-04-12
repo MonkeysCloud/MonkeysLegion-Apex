@@ -90,7 +90,7 @@ final class MCPServer
                 ],
                 'serverInfo' => [
                     'name'    => 'MonkeysLegion-Apex',
-                    'version' => '1.0.0',
+                    'version' => '2.0.0',
                 ],
             ],
         ];
@@ -122,8 +122,23 @@ final class MCPServer
         $name      = $params['name'] ?? '';
         $arguments = $params['arguments'] ?? [];
 
+        if (!is_string($name) || $name === '') {
+            return $this->errorResponse($id, -32602, 'Tool name must be a non-empty string');
+        }
+
         if (!isset($this->tools[$name])) {
             return $this->errorResponse($id, -32602, "Unknown tool: {$name}");
+        }
+
+        if (!is_array($arguments)) {
+            return $this->errorResponse($id, -32602, 'Tool arguments must be an object');
+        }
+
+        // Validate arguments against the tool's input schema
+        $schema = $this->tools[$name]['schema'];
+        $validationError = $this->validateArguments($arguments, $schema);
+        if ($validationError !== null) {
+            return $this->errorResponse($id, -32602, "Invalid arguments: {$validationError}");
         }
 
         try {
@@ -146,6 +161,62 @@ final class MCPServer
                 ],
             ];
         }
+    }
+
+    /**
+     * Validate tool arguments against the JSON Schema definition.
+     *
+     * @param array<string, mixed> $arguments
+     * @param array<string, mixed> $schema
+     */
+    private function validateArguments(array $arguments, array $schema): ?string
+    {
+        $required = $schema['required'] ?? [];
+        $properties = $schema['properties'] ?? [];
+
+        // Check required fields
+        foreach ($required as $field) {
+            if (!array_key_exists($field, $arguments)) {
+                return "missing required field: {$field}";
+            }
+        }
+
+        // Check that only declared properties are passed
+        if (!empty($properties)) {
+            foreach (array_keys($arguments) as $key) {
+                if (!isset($properties[$key])) {
+                    return "unexpected field: {$key}";
+                }
+            }
+        }
+
+        // Basic type checking
+        foreach ($arguments as $key => $value) {
+            if (!isset($properties[$key]['type'])) {
+                continue;
+            }
+            $expected = $properties[$key]['type'];
+            $actual = match (true) {
+                is_string($value) => 'string',
+                is_int($value)    => 'integer',
+                is_float($value)  => 'number',
+                is_bool($value)   => 'boolean',
+                is_array($value)  => 'array',
+                is_null($value)   => 'null',
+                default           => 'unknown',
+            };
+
+            // Allow integer where number is expected
+            if ($expected === 'number' && $actual === 'integer') {
+                continue;
+            }
+
+            if ($actual !== $expected) {
+                return "field '{$key}' expected {$expected}, got {$actual}";
+            }
+        }
+
+        return null;
     }
 
     /**

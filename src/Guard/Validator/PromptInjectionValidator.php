@@ -43,6 +43,15 @@ final class PromptInjectionValidator implements GuardInterface
         '/\b(?:bypass|circumvent|evade)\s+(?:the\s+)?(?:filter|safety|restriction)/i',
         '/\bunrestricted\s+mode\b/i',
         '/\bdev(?:eloper)?\s+mode\b/i',
+        // Emerging techniques: base64/encoded payloads, unicode tricks
+        '/\bbase64\s*(?:decode|encode)\s*(?:\(|:)/i',
+        '/\beval\s*\(/i',
+        '/\bexecute\s+(?:the\s+)?(?:following|this)\s+(?:code|command|instruction)/i',
+        '/\bsimulate\s+(?:a\s+)?(?:terminal|shell|console)\b/i',
+        '/\bsudo\s+/i',
+        '/\breverse\s+(?:the\s+)?(?:safety|content)\s+(?:policy|filter)/i',
+        '/\brespond\s+(?:as\s+)?(?:if|though)\s+(?:you\s+)?(?:have\s+)?no\s+(?:restrictions|limitations|rules)/i',
+        '/\bignore\s+(?:your|all|the)\s+(?:safety|ethical|content)\s+(?:guidelines|policies|rules)/i',
     ];
 
     public function __construct(
