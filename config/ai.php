@@ -42,6 +42,19 @@ return [
             'base_url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
             'timeout'  => 60.0,
         ],
+        'google' => [
+            'api_key'  => env('GOOGLE_API_KEY', ''),
+            'model'    => env('GOOGLE_MODEL', 'gemini-2.5-flash'),
+            'base_url' => env('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com'),
+            'timeout'  => 30.0,
+        ],
+        'vertex' => [
+            'api_key'  => env('VERTEX_API_KEY', ''),
+            'model'    => env('VERTEX_MODEL', 'gemini-2.5-flash'),
+            'project'  => env('VERTEX_PROJECT', ''),
+            'location' => env('VERTEX_LOCATION', 'us-central1'),
+            'timeout'  => 30.0,
+        ],
     ],
 
     /*
