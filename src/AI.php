@@ -90,7 +90,13 @@ final class AI
             // Execute tools and add results
             $results = $this->toolExecutor->executeAll($response->toolCalls);
             foreach ($results as $result) {
-                $encoded = json_encode($result->output, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+                $encoded = is_string($result->output)
+                    ? $result->output
+                    : json_encode($result->output, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+                // Enforce maximum tool output size to prevent context injection
+                if (mb_strlen($encoded) > 100_000) {
+                    $encoded = mb_substr($encoded, 0, 100_000) . '... [truncated]';
+                }
                 $allMessages[] = Message::tool(
                     $encoded,
                     $result->toolCallId,

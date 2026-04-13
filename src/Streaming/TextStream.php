@@ -14,12 +14,13 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\Streaming;
 
+use MonkeysLegion\Apex\Contract\StreamInterface;
 use MonkeysLegion\Apex\DTO\StreamChunk;
 
 /**
  * Wraps a streaming Generator into an iterable with text aggregation.
  */
-final class TextStream implements \IteratorAggregate
+final class TextStream implements StreamInterface
 {
     private string $buffer = '';
     private bool $consumed = false;

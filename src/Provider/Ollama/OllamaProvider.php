@@ -102,17 +102,29 @@ final class OllamaProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
+        // Use batch endpoint (/api/embed) which accepts multiple inputs at once
+        $raw = $this->request('POST', '/api/embed', [
+            'model'  => $this->model,
+            'input'  => $inputs,
+        ]);
+
         $vectors = [];
-        foreach ($inputs as $input) {
-            $raw = $this->request('POST', '/api/embeddings', [
-                'model'  => $this->model,
-                'prompt' => $input,
-            ]);
-            $embedding = $raw['embedding'] ?? [];
+        if (isset($raw['embeddings'])) {
+            // Batch response: embeddings is an array of arrays
+            foreach ($raw['embeddings'] as $i => $embedding) {
+                $vectors[] = new EmbeddingVector(
+                    input:      $inputs[$i] ?? '',
+                    vector:     $embedding,
+                    dimensions: count($embedding),
+                    model:      $this->model,
+                );
+            }
+        } elseif (isset($raw['embedding'])) {
+            // Fallback: single embedding response (legacy /api/embeddings)
             $vectors[] = new EmbeddingVector(
-                input:      $input,
-                vector:     $embedding,
-                dimensions: count($embedding),
+                input:      $inputs[0] ?? '',
+                vector:     $raw['embedding'],
+                dimensions: count($raw['embedding']),
                 model:      $this->model,
             );
         }

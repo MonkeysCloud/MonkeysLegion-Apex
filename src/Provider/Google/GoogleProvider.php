@@ -91,7 +91,7 @@ final class GoogleProvider extends AbstractProvider
         $body  = $this->buildBody($messages, $options);
         $model = $options['model'] ?? $this->model;
 
-        foreach ($this->streamRequest('POST', $this->buildEndpoint($model, 'streamGenerateContent') . '&alt=sse', $body) as $line) {
+        foreach ($this->streamRequest('POST', $this->buildEndpoint($model, 'streamGenerateContent') . '?alt=sse', $body) as $line) {
             $data = json_decode($line, true);
             if ($data === null) {
                 continue;
@@ -170,6 +170,7 @@ final class GoogleProvider extends AbstractProvider
     {
         return [
             'Content-Type: application/json',
+            'x-goog-api-key: ' . $this->apiKey,
         ];
     }
 
@@ -178,11 +179,7 @@ final class GoogleProvider extends AbstractProvider
      */
     private function buildEndpoint(string $model, string $method): string
     {
-        // API key is a query parameter for Google AI Studio
-        $separator = '?';
-        $keyParam  = "key={$this->apiKey}";
-
-        return "/{$this->apiVersion}/models/{$model}:{$method}{$separator}{$keyParam}";
+        return "/{$this->apiVersion}/models/{$model}:{$method}";
     }
 
     /**
