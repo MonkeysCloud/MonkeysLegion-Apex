@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MonkeysLegion Apex — Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F1A;
+    --surface: #131828;
+    --surface2: #1A2035;
+    --border: rgba(255,255,255,0.06);
+    --text: #E2E8F0;
+    --text-dim: #8B95A8;
+    --accent: #6366F1;
+    --accent-glow: rgba(99,102,241,0.25);
+    --green: #10B981;
+    --amber: #F59E0B;
+    --rose: #F43F5E;
+    --cyan: #06B6D4;
+    --purple: #A855F7;
+    --orange: #F97316;
+    --blue: #3B82F6;
+    --teal: #14B8A6;
+    --pink: #EC4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  .container {
+    width: 1200px;
+    max-width: 100%;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #6366F1, #A855F7, #EC4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* Flow arrow */
+  .flow-arrow {
+    text-align: center;
+    padding: 12px 0;
+    color: var(--accent);
+    font-size: 20px;
+    opacity: 0.6;
+  }
+
+  /* Tier label */
+  .tier {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    margin-top: 32px;
+  }
+  .tier:first-of-type { margin-top: 0; }
+  .tier-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .tier-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    gap: 12px;
+  }
+  .grid-1 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .grid-5 { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .card-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .card-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .card-items {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .chip {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Color variants */
+  .card-accent::before { background: linear-gradient(90deg, var(--accent), var(--purple)); }
+  .card-green::before { background: linear-gradient(90deg, var(--green), var(--teal)); }
+  .card-amber::before { background: linear-gradient(90deg, var(--amber), var(--orange)); }
+  .card-rose::before { background: linear-gradient(90deg, var(--rose), var(--pink)); }
+  .card-cyan::before { background: linear-gradient(90deg, var(--cyan), var(--blue)); }
+  .card-purple::before { background: linear-gradient(90deg, var(--purple), var(--pink)); }
+  .card-blue::before { background: linear-gradient(90deg, var(--blue), var(--accent)); }
+  .card-teal::before { background: linear-gradient(90deg, var(--teal), var(--green)); }
+  .card-orange::before { background: linear-gradient(90deg, var(--orange), var(--amber)); }
+
+  .chip-accent { background: rgba(99,102,241,0.12); color: #818CF8; }
+  .chip-green { background: rgba(16,185,129,0.12); color: #34D399; }
+  .chip-amber { background: rgba(245,158,11,0.12); color: #FBBF24; }
+  .chip-rose { background: rgba(244,63,94,0.12); color: #FB7185; }
+  .chip-cyan { background: rgba(6,182,212,0.12); color: #22D3EE; }
+  .chip-purple { background: rgba(168,85,247,0.12); color: #C084FC; }
+  .chip-blue { background: rgba(59,130,246,0.12); color: #60A5FA; }
+  .chip-teal { background: rgba(20,184,166,0.12); color: #2DD4BF; }
+
+  /* Connector lines */
+  .connector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+    position: relative;
+  }
+  .connector-line {
+    width: 2px;
+    height: 24px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    opacity: 0.4;
+  }
+  .connector-arrows {
+    display: flex;
+    gap: 80px;
+    justify-content: center;
+    padding: 6px 0;
+  }
+  .connector-arrows .arr {
+    width: 2px;
+    height: 20px;
+    background: rgba(99,102,241,0.3);
+    position: relative;
+  }
+  .connector-arrows .arr::after {
+    content: '▼';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--accent);
+    opacity: 0.5;
+  }
+
+  /* Wide card spanning full width */
+  .card-wide {
+    text-align: center;
+  }
+  .card-wide .card-items {
+    justify-content: center;
+  }
+
+  /* Facade card special */
+  .facade-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.08));
+    border: 1px solid rgba(99,102,241,0.2);
+    text-align: center;
+    padding: 24px;
+  }
+  .facade-card .card-title {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #818CF8, #C084FC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .facade-card .card-desc {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366F1, #A855F7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .badge-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .badge-php { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: #818CF8; }
+  .badge-mit { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #34D399; }
+  .badge-test { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #FBBF24; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🐵 MonkeysLegion Apex</h1>
+    <div class="subtitle">AI Orchestration Engine — Provider-Agnostic PHP 8.4 Architecture</div>
+  </div>
+
+  <!-- TIER: Entry Point -->
+  <div class="tier">
+    <span class="tier-label">Entry Point</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-1">
+    <div class="card facade-card">
+      <div class="card-title">AI Facade</div>
+      <div class="card-desc">generate() · extract() · stream() · embed() — Single unified API</div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Middleware Pipeline -->
+  <div class="tier">
+    <span class="tier-label">Middleware Pipeline</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="card card-amber">
+      <span class="card-icon">⚡</span>
+      <div class="card-title">RateLimit</div>
+      <div class="card-desc">Token bucket throttling</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">🔄</span>
+      <div class="card-title">Retry</div>
+      <div class="card-desc">Exponential backoff + jitter</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">📦</span>
+      <div class="card-title">Cache</div>
+      <div class="card-desc">PSR-16 semantic cache</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">🔀</span>
+      <div class="card-title">Fallback</div>
+      <div class="card-desc">Provider failover chain</div>
+    </div>
+  </div>
+  <div style="height:6px"></div>
+  <div class="grid grid-4">
+    <div class="card card-amber">
+      <span class="card-icon">🛡️</span>
+      <div class="card-title">InputGuard</div>
+      <div class="card-desc">Pre-request validation</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">🔍</span>
+      <div class="card-title">OutputGuard</div>
+      <div class="card-desc">Post-response filtering</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">💰</span>
+      <div class="card-title">CostBudget</div>
+      <div class="card-desc">Budget enforcement</div>
+    </div>
+    <div class="card card-amber">
+      <span class="card-icon">📈</span>
+      <div class="card-title">Telemetry</div>
+      <div class="card-desc">Traces · Metrics · Logs</div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Provider Layer -->
+  <div class="tier">
+    <span class="tier-label">Provider Layer</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-5">
+    <div class="card card-cyan">
+      <span class="card-icon">🟣</span>
+      <div class="card-title">Anthropic</div>
+      <div class="card-items">
+        <span class="chip chip-cyan">Claude Opus</span>
+        <span class="chip chip-cyan">Sonnet</span>
+        <span class="chip chip-cyan">Haiku</span>
+      </div>
+    </div>
+    <div class="card card-cyan">
+      <span class="card-icon">🟢</span>
+      <div class="card-title">OpenAI</div>
+      <div class="card-items">
+        <span class="chip chip-cyan">GPT-4.1</span>
+        <span class="chip chip-cyan">o3</span>
+        <span class="chip chip-cyan">o4-mini</span>
+      </div>
+    </div>
+    <div class="card card-cyan">
+      <span class="card-icon">🔵</span>
+      <div class="card-title">Google</div>
+      <div class="card-items">
+        <span class="chip chip-cyan">Gemini 2.5</span>
+        <span class="chip chip-cyan">Flash</span>
+        <span class="chip chip-cyan">Pro</span>
+      </div>
+    </div>
+    <div class="card card-cyan">
+      <span class="card-icon">☁️</span>
+      <div class="card-title">Vertex AI</div>
+      <div class="card-items">
+        <span class="chip chip-cyan">Gemini</span>
+        <span class="chip chip-cyan">Enterprise</span>
+      </div>
+    </div>
+    <div class="card card-cyan">
+      <span class="card-icon">🏠</span>
+      <div class="card-title">Ollama</div>
+      <div class="card-items">
+        <span class="chip chip-cyan">Llama 3</span>
+        <span class="chip chip-cyan">Mistral</span>
+        <span class="chip chip-cyan">Local</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Core Capabilities -->
+  <div class="tier">
+    <span class="tier-label">Core Capabilities</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card card-green">
+      <span class="card-icon">📐</span>
+      <div class="card-title">Schema Engine</div>
+      <div class="card-desc">PHP class → JSON Schema → typed output</div>
+      <div class="card-items">
+        <span class="chip chip-green">#[Description]</span>
+        <span class="chip chip-green">#[Constrain]</span>
+        <span class="chip chip-green">#[Optional]</span>
+        <span class="chip chip-green">#[ArrayOf]</span>
+      </div>
+    </div>
+    <div class="card card-green">
+      <span class="card-icon">🔧</span>
+      <div class="card-title">Tool System</div>
+      <div class="card-desc">Attribute-driven tool calling + multi-step loops</div>
+      <div class="card-items">
+        <span class="chip chip-green">#[Tool]</span>
+        <span class="chip chip-green">#[ToolParam]</span>
+        <span class="chip chip-green">MultiStep</span>
+        <span class="chip chip-green">Executor</span>
+      </div>
+    </div>
+    <div class="card card-green">
+      <span class="card-icon">🌊</span>
+      <div class="card-title">Streaming</div>
+      <div class="card-desc">Real-time SSE + object streaming</div>
+      <div class="card-items">
+        <span class="chip chip-green">TextStream</span>
+        <span class="chip chip-green">ObjectStream</span>
+        <span class="chip chip-green">SSE</span>
+        <span class="chip chip-green">Buffer</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Orchestration -->
+  <div class="tier">
+    <span class="tier-label">Orchestration</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card card-purple">
+      <span class="card-icon">🔀</span>
+      <div class="card-title">Pipeline Engine</div>
+      <div class="card-desc">Declarative multi-step workflows with branching and loops</div>
+      <div class="card-items">
+        <span class="chip chip-purple">Generate</span>
+        <span class="chip chip-purple">Extract</span>
+        <span class="chip chip-purple">Summarize</span>
+        <span class="chip chip-purple">Translate</span>
+        <span class="chip chip-purple">Guard</span>
+        <span class="chip chip-purple">Classify</span>
+        <span class="chip chip-purple">Conditional</span>
+        <span class="chip chip-purple">Loop</span>
+        <span class="chip chip-purple">Parallel</span>
+        <span class="chip chip-purple">Transform</span>
+        <span class="chip chip-purple">HumanInLoop</span>
+        <span class="chip chip-purple">Route</span>
+      </div>
+    </div>
+    <div class="card card-purple">
+      <span class="card-icon">🤝</span>
+      <div class="card-title">Agent System</div>
+      <div class="card-desc">Multi-agent crews with handoffs and lifecycle hooks</div>
+      <div class="card-items">
+        <span class="chip chip-purple">Sequential</span>
+        <span class="chip chip-purple">Parallel</span>
+        <span class="chip chip-purple">Hierarchical</span>
+        <span class="chip chip-purple">Conversational</span>
+        <span class="chip chip-purple">AgentBuilder</span>
+        <span class="chip chip-purple">CrewBuilder</span>
+        <span class="chip chip-purple">Handoff</span>
+        <span class="chip chip-purple">AgentMemory</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Safety & Intelligence -->
+  <div class="tier">
+    <span class="tier-label">Safety & Intelligence</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card card-rose">
+      <span class="card-icon">🛡️</span>
+      <div class="card-title">Guard System</div>
+      <div class="card-desc">6 validators + 6 actions for input/output safety</div>
+      <div class="card-items">
+        <span class="chip chip-rose">PII</span>
+        <span class="chip chip-rose">Injection</span>
+        <span class="chip chip-rose">Toxicity</span>
+        <span class="chip chip-rose">Regex</span>
+        <span class="chip chip-rose">WordCount</span>
+        <span class="chip chip-rose">Block</span>
+        <span class="chip chip-rose">Redact</span>
+        <span class="chip chip-rose">Warn</span>
+      </div>
+    </div>
+    <div class="card card-teal">
+      <span class="card-icon">🧭</span>
+      <div class="card-title">Smart Router</div>
+      <div class="card-desc">Complexity-based model selection + fallback chains</div>
+      <div class="card-items">
+        <span class="chip chip-teal">CostOptimized</span>
+        <span class="chip chip-teal">QualityFirst</span>
+        <span class="chip chip-teal">LatencyFirst</span>
+        <span class="chip chip-teal">Balanced</span>
+      </div>
+    </div>
+    <div class="card card-blue">
+      <span class="card-icon">💰</span>
+      <div class="card-title">Cost Engine</div>
+      <div class="card-desc">Tracking, budgets, pricing, aggregation, reports</div>
+      <div class="card-items">
+        <span class="chip chip-blue">Tracker</span>
+        <span class="chip chip-blue">BudgetMgr</span>
+        <span class="chip chip-blue">Pricing</span>
+        <span class="chip chip-blue">Reports</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-line"></div></div>
+
+  <!-- TIER: Memory & Integration -->
+  <div class="tier">
+    <span class="tier-label">Memory & Integration</span>
+    <div class="tier-line"></div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="card card-accent">
+      <span class="card-icon">🧠</span>
+      <div class="card-title">Memory</div>
+      <div class="card-desc">5 strategies + agent-scoped</div>
+      <div class="card-items">
+        <span class="chip chip-accent">Conversation</span>
+        <span class="chip chip-accent">Sliding</span>
+        <span class="chip chip-accent">Summary</span>
+        <span class="chip chip-accent">Vector</span>
+        <span class="chip chip-accent">Persistent</span>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <span class="card-icon">📊</span>
+      <div class="card-title">Embeddings</div>
+      <div class="card-desc">Vector search + similarity</div>
+      <div class="card-items">
+        <span class="chip chip-accent">Cosine</span>
+        <span class="chip chip-accent">Euclidean</span>
+        <span class="chip chip-accent">DotProduct</span>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <span class="card-icon">🔌</span>
+      <div class="card-title">MCP + Events</div>
+      <div class="card-desc">JSON-RPC server + event dispatch</div>
+      <div class="card-items">
+        <span class="chip chip-accent">MCPServer</span>
+        <span class="chip chip-accent">Dispatcher</span>
+        <span class="chip chip-accent">Wildcards</span>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <span class="card-icon">🖥️</span>
+      <div class="card-title">Console + HTTP</div>
+      <div class="card-desc">CLI commands + framework integration</div>
+      <div class="card-items">
+        <span class="chip chip-accent">ai:chat</span>
+        <span class="chip chip-accent">ai:costs</span>
+        <span class="chip chip-accent">SSE Response</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-stats">
+      <div class="stat">
+        <div class="stat-num">145</div>
+        <div class="stat-label">Source Files</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">363</div>
+        <div class="stat-label">Tests</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">705</div>
+        <div class="stat-label">Assertions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">5</div>
+        <div class="stat-label">Providers</div>
+      </div>
+    </div>
+    <div class="badge-row">
+      <span class="badge badge-php">PHP 8.4+</span>
+      <span class="badge badge-mit">MIT License</span>
+      <span class="badge badge-test">100% Pass Rate</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

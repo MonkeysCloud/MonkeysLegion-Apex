@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Apex LinkedIn</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 1200px;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #07080F;
+    position: relative;
+  }
+
+  /* Subtle grid bg */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Ambient glows */
+  .glow-1 {
+    position: absolute;
+    width: 600px; height: 600px;
+    top: -100px; left: -100px;
+    background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .glow-2 {
+    position: absolute;
+    width: 500px; height: 500px;
+    bottom: -50px; right: -50px;
+    background: radial-gradient(circle, rgba(168,85,247,0.10) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .glow-3 {
+    position: absolute;
+    width: 300px; height: 300px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(236,72,153,0.06) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    padding: 40px 56px 32px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* Top section */
+  .top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #6366F1, #A855F7);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+  }
+  .brand-text h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #F1F5F9;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .brand-text span {
+    font-size: 12px;
+    color: #64748B;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .php-badge {
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: #818CF8;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Title */
+  .title {
+    margin-bottom: 32px;
+  }
+  .title h1 {
+    font-size: 44px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    color: #F8FAFC;
+    max-width: 800px;
+  }
+  .title h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, #818CF8, #C084FC, #F472B6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .title p {
+    font-size: 15px;
+    color: #94A3B8;
+    margin-top: 10px;
+    line-height: 1.5;
+    max-width: 700px;
+  }
+
+  /* Main flow */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Flow row */
+  .flow-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  /* Node */
+  .node {
+    flex: 1;
+    background: rgba(15,23,42,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 14px 16px;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+  .node::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .node-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .node-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .node-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #E2E8F0;
+  }
+  .node-desc {
+    font-size: 11px;
+    color: #64748B;
+    line-height: 1.4;
+  }
+  .node-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .tag {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* Facade node */
+  .facade {
+    background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(168,85,247,0.08));
+    border: 1px solid rgba(99,102,241,0.2);
+    text-align: center;
+    padding: 16px 24px;
+  }
+  .facade .node-header { justify-content: center; }
+  .facade .node-name {
+    font-size: 18px;
+    background: linear-gradient(135deg, #818CF8, #C084FC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .facade .node-desc { text-align: center; }
+
+  /* Color schemes */
+  .n-indigo::before { background: linear-gradient(90deg, #6366F1, #818CF8); }
+  .n-indigo .node-icon { background: rgba(99,102,241,0.15); }
+  .n-indigo .tag { background: rgba(99,102,241,0.1); color: #A5B4FC; }
+
+  .n-amber::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  .n-amber .node-icon { background: rgba(245,158,11,0.15); }
+  .n-amber .tag { background: rgba(245,158,11,0.1); color: #FCD34D; }
+
+  .n-cyan::before { background: linear-gradient(90deg, #06B6D4, #22D3EE); }
+  .n-cyan .node-icon { background: rgba(6,182,212,0.15); }
+  .n-cyan .tag { background: rgba(6,182,212,0.1); color: #67E8F9; }
+
+  .n-green::before { background: linear-gradient(90deg, #10B981, #34D399); }
+  .n-green .node-icon { background: rgba(16,185,129,0.15); }
+  .n-green .tag { background: rgba(16,185,129,0.1); color: #6EE7B7; }
+
+  .n-purple::before { background: linear-gradient(90deg, #A855F7, #C084FC); }
+  .n-purple .node-icon { background: rgba(168,85,247,0.15); }
+  .n-purple .tag { background: rgba(168,85,247,0.1); color: #D8B4FE; }
+
+  .n-rose::before { background: linear-gradient(90deg, #F43F5E, #FB7185); }
+  .n-rose .node-icon { background: rgba(244,63,94,0.15); }
+  .n-rose .tag { background: rgba(244,63,94,0.1); color: #FDA4AF; }
+
+  .n-blue::before { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
+  .n-blue .node-icon { background: rgba(59,130,246,0.15); }
+  .n-blue .tag { background: rgba(59,130,246,0.1); color: #93C5FD; }
+
+  .n-teal::before { background: linear-gradient(90deg, #14B8A6, #2DD4BF); }
+  .n-teal .node-icon { background: rgba(20,184,166,0.15); }
+  .n-teal .tag { background: rgba(20,184,166,0.1); color: #5EEAD4; }
+
+  /* Arrow connectors */
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    align-items: center;
+    padding: 2px 0;
+  }
+  .arrow-down {
+    color: #334155;
+    font-size: 14px;
+    letter-spacing: 6px;
+  }
+
+  /* Bottom stats */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding-top: 16px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .stat { text-align: center; }
+  .stat-val {
+    font-size: 24px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #818CF8, #C084FC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-lbl {
+    font-size: 10px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+  <div class="glow-3"></div>
+
+  <div class="content">
+
+    <!-- Top bar -->
+    <div class="top">
+      <div class="brand">
+        <div class="brand-icon">🐵</div>
+        <div class="brand-text">
+          <h2>MonkeysLegion Apex</h2>
+          <span>AI Orchestration Engine</span>
+        </div>
+      </div>
+      <div class="php-badge">PHP 8.4+</div>
+    </div>
+
+    <!-- Title -->
+    <div class="title">
+      <h1>One API. <em>Every LLM.</em><br>Production-Ready.</h1>
+      <p>Provider-agnostic AI orchestration with pipelines, agents, guardrails, cost tracking, and structured output — all type-safe.</p>
+    </div>
+
+    <!-- Architecture Flow -->
+    <div class="flow">
+
+      <!-- Row 1: Facade -->
+      <div class="flow-row">
+        <div class="node facade">
+          <div class="node-header">
+            <div class="node-name">AI::generate() · extract() · stream() · embed()</div>
+          </div>
+          <div class="node-desc">Single entry point — swap providers without changing a line of code</div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-down">▼ ▼ ▼</span></div>
+
+      <!-- Row 2: Middleware -->
+      <div class="flow-row">
+        <div class="node n-amber">
+          <div class="node-header">
+            <div class="node-icon">🔗</div>
+            <div class="node-name">Middleware Pipeline</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">RateLimit</span>
+            <span class="tag">Retry</span>
+            <span class="tag">Cache</span>
+            <span class="tag">Guards</span>
+            <span class="tag">CostBudget</span>
+            <span class="tag">Telemetry</span>
+            <span class="tag">Fallback</span>
+          </div>
+        </div>
+        <div class="node n-rose">
+          <div class="node-header">
+            <div class="node-icon">🛡️</div>
+            <div class="node-name">Guardrails</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">PII</span>
+            <span class="tag">Injection</span>
+            <span class="tag">Toxicity</span>
+            <span class="tag">Regex</span>
+            <span class="tag">Block</span>
+            <span class="tag">Redact</span>
+            <span class="tag">Warn</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-down">▼ ▼ ▼</span></div>
+
+      <!-- Row 3: Providers -->
+      <div class="flow-row">
+        <div class="node n-cyan">
+          <div class="node-header">
+            <div class="node-icon">🟣</div>
+            <div class="node-name">Anthropic</div>
+          </div>
+          <div class="node-desc">Claude</div>
+        </div>
+        <div class="node n-cyan">
+          <div class="node-header">
+            <div class="node-icon">🟢</div>
+            <div class="node-name">OpenAI</div>
+          </div>
+          <div class="node-desc">GPT · o3</div>
+        </div>
+        <div class="node n-cyan">
+          <div class="node-header">
+            <div class="node-icon">🔵</div>
+            <div class="node-name">Google</div>
+          </div>
+          <div class="node-desc">Gemini 2.5</div>
+        </div>
+        <div class="node n-cyan">
+          <div class="node-header">
+            <div class="node-icon">☁️</div>
+            <div class="node-name">Vertex AI</div>
+          </div>
+          <div class="node-desc">Enterprise</div>
+        </div>
+        <div class="node n-cyan">
+          <div class="node-header">
+            <div class="node-icon">🏠</div>
+            <div class="node-name">Ollama</div>
+          </div>
+          <div class="node-desc">Local</div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-down">▼ ▼ ▼</span></div>
+
+      <!-- Row 4: Orchestration -->
+      <div class="flow-row">
+        <div class="node n-purple">
+          <div class="node-header">
+            <div class="node-icon">🔀</div>
+            <div class="node-name">Pipelines</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">Generate</span>
+            <span class="tag">Extract</span>
+            <span class="tag">Summarize</span>
+            <span class="tag">Conditional</span>
+            <span class="tag">Loop</span>
+            <span class="tag">Guard</span>
+          </div>
+        </div>
+        <div class="node n-purple">
+          <div class="node-header">
+            <div class="node-icon">🤝</div>
+            <div class="node-name">Multi-Agent</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">Sequential</span>
+            <span class="tag">Parallel</span>
+            <span class="tag">Hierarchical</span>
+            <span class="tag">Conversational</span>
+          </div>
+        </div>
+        <div class="node n-green">
+          <div class="node-header">
+            <div class="node-icon">📐</div>
+            <div class="node-name">Structured Output</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">#[Description]</span>
+            <span class="tag">#[Constrain]</span>
+            <span class="tag">JSON Schema</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: Support -->
+      <div class="flow-row">
+        <div class="node n-blue">
+          <div class="node-header">
+            <div class="node-icon">💰</div>
+            <div class="node-name">Cost Engine</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">Tracker</span>
+            <span class="tag">Budgets</span>
+            <span class="tag">Reports</span>
+          </div>
+        </div>
+        <div class="node n-teal">
+          <div class="node-header">
+            <div class="node-icon">🧠</div>
+            <div class="node-name">Memory</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">Conversation</span>
+            <span class="tag">Sliding</span>
+            <span class="tag">Summary</span>
+            <span class="tag">Vector</span>
+          </div>
+        </div>
+        <div class="node n-indigo">
+          <div class="node-header">
+            <div class="node-icon">🔧</div>
+            <div class="node-name">Tools + MCP</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">#[Tool]</span>
+            <span class="tag">MultiStep</span>
+            <span class="tag">MCP Server</span>
+          </div>
+        </div>
+        <div class="node n-indigo">
+          <div class="node-header">
+            <div class="node-icon">🌊</div>
+            <div class="node-name">Streaming</div>
+          </div>
+          <div class="node-tags">
+            <span class="tag">SSE</span>
+            <span class="tag">TextStream</span>
+            <span class="tag">ObjectStream</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val">145</div>
+        <div class="stat-lbl">Source Files</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">363</div>
+        <div class="stat-lbl">Tests</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">705</div>
+        <div class="stat-lbl">Assertions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">5</div>
+        <div class="stat-lbl">Providers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">100%</div>
+        <div class="stat-lbl">Pass Rate</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

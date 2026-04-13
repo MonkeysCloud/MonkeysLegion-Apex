@@ -136,7 +136,8 @@ final class ToolExecutor
         foreach ($children as $child) {
             $data = '';
             // Set a read timeout to prevent infinite loops
-            socket_set_option($child['socket'], SOL_SOCKET, SO_RCVTIMEO, ['sec' => (int) $this->timeout, 'usec' => 0]);
+            // Note: SO_RCVTIMEO may not be supported on AF_UNIX sockets (macOS)
+            @socket_set_option($child['socket'], SOL_SOCKET, SO_RCVTIMEO, ['sec' => (int) $this->timeout, 'usec' => 0]);
             while (true) {
                 $chunk = @socket_read($child['socket'], 65536);
                 if ($chunk === false || $chunk === '') {
