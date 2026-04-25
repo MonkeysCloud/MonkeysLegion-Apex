@@ -122,6 +122,24 @@ final class ModelRegistry
             new ModelInfo('o4-mini', 'openai', ModelTier::Balanced, 200_000, 100_000, 1.1, 4.4),
             new ModelInfo('gemini-2.5-pro', 'google', ModelTier::Power, 1_000_000, 65_000, 1.25, 10.0, true, true, true),
             new ModelInfo('gemini-2.5-flash', 'google', ModelTier::Fast, 1_000_000, 65_000, 0.15, 0.6),
+
+            // DeepSeek
+            new ModelInfo('deepseek-chat', 'deepseek', ModelTier::Balanced, 128_000, 8_192, 0.27, 1.1),
+            new ModelInfo('deepseek-reasoner', 'deepseek', ModelTier::Power, 128_000, 16_384, 0.55, 2.19),
+
+            // Mistral
+            new ModelInfo('mistral-large-latest', 'mistral', ModelTier::Power, 128_000, 32_000, 2.0, 6.0, true, true),
+            new ModelInfo('mistral-medium-latest', 'mistral', ModelTier::Balanced, 128_000, 32_000, 0.8, 2.4),
+            new ModelInfo('mistral-small-latest', 'mistral', ModelTier::Fast, 128_000, 32_000, 0.2, 0.6),
+            new ModelInfo('codestral-latest', 'mistral', ModelTier::Balanced, 256_000, 32_000, 0.3, 0.9),
+
+            // Groq
+            new ModelInfo('llama-3.3-70b-versatile', 'groq', ModelTier::Balanced, 128_000, 32_768, 0.59, 0.79),
+            new ModelInfo('llama-3.1-8b-instant', 'groq', ModelTier::Fast, 128_000, 8_192, 0.05, 0.08),
+            new ModelInfo('mixtral-8x7b-32768', 'groq', ModelTier::Fast, 32_768, 32_768, 0.24, 0.24),
+            new ModelInfo('gemma2-9b-it', 'groq', ModelTier::Fast, 8_192, 8_192, 0.2, 0.2),
+
+            // Ollama (local)
             new ModelInfo('llama3', 'ollama', ModelTier::Fast, 8_192, 4_096, 0.0, 0.0),
         ];
 

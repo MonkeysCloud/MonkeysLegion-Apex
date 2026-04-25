@@ -72,6 +72,20 @@ final class PricingRegistry
             // DeepSeek
             'deepseek-v3'        => new ModelPricing(0.27,  1.10),
             'deepseek-r1'        => new ModelPricing(0.55,  2.19),
+            'deepseek-chat'      => new ModelPricing(0.27,  1.10),
+            'deepseek-reasoner'  => new ModelPricing(0.55,  2.19),
+
+            // Mistral
+            'mistral-large-latest'  => new ModelPricing(2.00, 6.00),
+            'mistral-medium-latest' => new ModelPricing(0.80, 2.40),
+            'mistral-small-latest'  => new ModelPricing(0.20, 0.60),
+            'codestral-latest'      => new ModelPricing(0.30, 0.90),
+
+            // Groq
+            'llama-3.3-70b-versatile' => new ModelPricing(0.59, 0.79),
+            'llama-3.1-8b-instant'    => new ModelPricing(0.05, 0.08),
+            'mixtral-8x7b-32768'      => new ModelPricing(0.24, 0.24),
+            'gemma2-9b-it'            => new ModelPricing(0.20, 0.20),
 
             // Local (Ollama — free)
             'llama3'             => new ModelPricing(0.00, 0.00),

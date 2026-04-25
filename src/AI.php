@@ -14,13 +14,19 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex;
 
+use MonkeysLegion\Apex\Agent\AgentBuilder;
+use MonkeysLegion\Apex\Agent\CrewBuilder;
+use MonkeysLegion\Apex\Contract\MiddlewareInterface;
 use MonkeysLegion\Apex\Contract\ProviderInterface;
+use MonkeysLegion\Apex\Cost\CostReport;
 use MonkeysLegion\Apex\Cost\CostTracker;
 use MonkeysLegion\Apex\DTO\EmbeddingVector;
 use MonkeysLegion\Apex\DTO\Message;
 use MonkeysLegion\Apex\DTO\Response;
 use MonkeysLegion\Apex\Enum\Role;
 use MonkeysLegion\Apex\Exception\SchemaValidationException;
+use MonkeysLegion\Apex\Guard\Guard;
+use MonkeysLegion\Apex\Pipeline\Pipeline;
 use MonkeysLegion\Apex\Schema\Schema;
 use MonkeysLegion\Apex\Schema\SchemaCompiler;
 use MonkeysLegion\Apex\Schema\SchemaValidator;
@@ -256,5 +262,47 @@ final class AI
             $messages = array_merge($messages, $input);
         }
         return $messages;
+    }
+
+    // ─── Facade Methods (v1.2.0) ────────────────────────
+
+    /**
+     * Create a new pipeline builder.
+     */
+    public function pipeline(?string $name = null): Pipeline
+    {
+        return Pipeline::create($name);
+    }
+
+    /**
+     * Create a new agent builder.
+     */
+    public function agent(string $name = 'agent'): AgentBuilder
+    {
+        return (new AgentBuilder($this))->name($name);
+    }
+
+    /**
+     * Create a new crew builder.
+     */
+    public function crew(string $name = 'crew'): CrewBuilder
+    {
+        return (new CrewBuilder($this))->name($name);
+    }
+
+    /**
+     * Create a new guard builder.
+     */
+    public function guard(): Guard
+    {
+        return Guard::create();
+    }
+
+    /**
+     * Get a cost report for the current session.
+     */
+    public function stats(): ?CostReport
+    {
+        return $this->costTracker?->report();
     }
 }

@@ -224,7 +224,7 @@ final class ApexV2Test extends TestCase
     {
         $server = new MCPServer();
         $result = $server->handle(['method' => 'initialize', 'id' => 1]);
-        $this->assertSame('2.0.0', $result['result']['serverInfo']['version']);
+        $this->assertSame('1.2.0', $result['result']['serverInfo']['version']);
     }
 
     // ─── RequestIdMiddleware ─────────────────────────────

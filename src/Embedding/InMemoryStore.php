@@ -21,7 +21,7 @@ use MonkeysLegion\Apex\DTO\EmbeddingVector;
 /**
  * In-memory vector store for fast similarity search.
  */
-final class InMemoryStore
+final class InMemoryStore implements VectorStoreInterface
 {
     /** @var list<array{vector: EmbeddingVector, metadata: array<string, mixed>}> */
     private array $vectors = [];
@@ -58,6 +58,18 @@ final class InMemoryStore
         usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
 
         return array_slice($scored, 0, $topK);
+    }
+
+    /**
+     * Remove a vector by its input text.
+     */
+    public function delete(string $input): bool
+    {
+        $initialCount = count($this->vectors);
+        $this->vectors = array_values(
+            array_filter($this->vectors, fn($entry) => $entry['vector']->input !== $input)
+        );
+        return count($this->vectors) < $initialCount;
     }
 
     /**

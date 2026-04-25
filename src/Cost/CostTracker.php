@@ -75,4 +75,12 @@ final class CostTracker implements CostTrackerInterface
     {
         $this->requests = [];
     }
+
+    /**
+     * Generate a cost report from all tracked requests.
+     */
+    public function report(string $periodFormat = 'Y-m-d'): CostReport
+    {
+        return CostReport::generate($this->requests, $periodFormat);
+    }
 }

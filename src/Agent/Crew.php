@@ -16,16 +16,25 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\Agent;
 
+use MonkeysLegion\Apex\Agent\Orchestration\ConversationalOrchestrator;
+use MonkeysLegion\Apex\Agent\Orchestration\HierarchicalOrchestrator;
+use MonkeysLegion\Apex\Agent\Orchestration\OrchestratorInterface;
+use MonkeysLegion\Apex\Agent\Orchestration\ParallelOrchestrator;
+use MonkeysLegion\Apex\Agent\Orchestration\SequentialOrchestrator;
 use MonkeysLegion\Apex\DTO\Response;
 use MonkeysLegion\Apex\Enum\AgentProcess;
 
 /**
  * Multi-agent crew — orchestrates multiple agents.
+ *
+ * Delegates execution to pluggable orchestration strategies.
  */
 final class Crew
 {
     /** @var list<Agent> */
     private array $agents;
+
+    private OrchestratorInterface $orchestrator;
 
     /**
      * @param list<Agent> $agents
@@ -35,8 +44,10 @@ final class Crew
         array                        $agents,
         public readonly AgentProcess $process = AgentProcess::Sequential,
         public readonly int          $maxIterations = 10,
+        ?OrchestratorInterface       $orchestrator = null,
     ) {
         $this->agents = $agents;
+        $this->orchestrator = $orchestrator ?? $this->resolveOrchestrator($process);
     }
 
     /**
@@ -46,97 +57,39 @@ final class Crew
      */
     public function run(string $task): array
     {
-        return match ($this->process) {
-            AgentProcess::Sequential     => $this->runSequential($task),
-            AgentProcess::Hierarchical   => $this->runHierarchical($task),
-            AgentProcess::Parallel       => $this->runParallel($task),
-            AgentProcess::Conversational => $this->runConversational($task),
+        return $this->orchestrator->run($this->agents, $task, [
+            'maxIterations' => $this->maxIterations,
+        ]);
+    }
+
+    /**
+     * Get the agents in this crew.
+     *
+     * @return list<Agent>
+     */
+    public function agents(): array
+    {
+        return $this->agents;
+    }
+
+    /**
+     * Get the orchestrator in use.
+     */
+    public function orchestrator(): OrchestratorInterface
+    {
+        return $this->orchestrator;
+    }
+
+    /**
+     * Resolve the default orchestrator for a given process type.
+     */
+    private function resolveOrchestrator(AgentProcess $process): OrchestratorInterface
+    {
+        return match ($process) {
+            AgentProcess::Sequential     => new SequentialOrchestrator(),
+            AgentProcess::Parallel       => new ParallelOrchestrator(),
+            AgentProcess::Hierarchical   => new HierarchicalOrchestrator(),
+            AgentProcess::Conversational => new ConversationalOrchestrator($this->maxIterations),
         };
-    }
-
-    /**
-     * @return list<array{agent: string, response: Response}>
-     */
-    private function runSequential(string $task): array
-    {
-        $results = [];
-        $input   = $task;
-
-        foreach ($this->agents as $agent) {
-            $response  = $agent->run($input);
-            $results[] = ['agent' => $agent->name, 'response' => $response];
-            $input     = $response->content;
-        }
-
-        return $results;
-    }
-
-    /**
-     * @return list<array{agent: string, response: Response}>
-     */
-    private function runHierarchical(string $task): array
-    {
-        if (empty($this->agents)) {
-            return [];
-        }
-
-        // First agent is the manager/coordinator
-        $manager  = $this->agents[0];
-        $workers  = array_slice($this->agents, 1);
-        $results  = [];
-
-        $plan = $manager->run("Break this task into subtasks for team members: {$task}");
-        $results[] = ['agent' => $manager->name, 'response' => $plan];
-
-        foreach ($workers as $worker) {
-            $response  = $worker->run($plan->content);
-            $results[] = ['agent' => $worker->name, 'response' => $response];
-        }
-
-        // Manager synthesizes
-        $synthesis = $manager->run('Synthesize the team results into a final answer.');
-        $results[] = ['agent' => $manager->name, 'response' => $synthesis];
-
-        return $results;
-    }
-
-    /**
-     * @return list<array{agent: string, response: Response}>
-     */
-    private function runParallel(string $task): array
-    {
-        $results = [];
-
-        foreach ($this->agents as $agent) {
-            $response  = $agent->run($task);
-            $results[] = ['agent' => $agent->name, 'response' => $response];
-        }
-
-        return $results;
-    }
-
-    /**
-     * @return list<array{agent: string, response: Response}>
-     */
-    private function runConversational(string $task): array
-    {
-        $results    = [];
-        $input      = $task;
-        $iterations = 0;
-
-        while ($iterations < $this->maxIterations) {
-            foreach ($this->agents as $agent) {
-                // Check before each agent to stop mid-cycle at the exact limit
-                if ($iterations >= $this->maxIterations) {
-                    break 2;
-                }
-                $response  = $agent->run($input);
-                $results[] = ['agent' => $agent->name, 'response' => $response];
-                $input     = $response->content;
-                $iterations++;
-            }
-        }
-
-        return $results;
     }
 }

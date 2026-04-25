@@ -15,15 +15,33 @@ declare(strict_types=1);
 namespace MonkeysLegion\Apex\MCP;
 
 /**
- * MCP Server — provides tools and resources to MCP clients.
+ * MCP Server — provides tools, resources, and prompts to MCP clients.
+ *
+ * Supports MCP protocol versions:
+ *   - 2024-11-05 (legacy, for backwards compatibility)
+ *   - 2025-03-26
+ *   - 2025-11-25 (latest — Streamable HTTP transport)
  */
 final class MCPServer
 {
-    /** @var array<string, array{handler: callable, schema: array<string, mixed>}> */
+    public const string LATEST_PROTOCOL = '2025-11-25';
+
+    private const array SUPPORTED_VERSIONS = ['2024-11-05', '2025-03-26', '2025-11-25'];
+
+    /** @var array<string, array{handler: callable, schema: array<string, mixed>, description: string}> */
     private array $tools = [];
 
     /** @var array<string, array{uri: string, content: string, mimeType: string}> */
     private array $resources = [];
+
+    /** @var array<string, MCPPrompt> */
+    private array $prompts = [];
+
+    /** @var ?string Current session ID */
+    private ?string $sessionId = null;
+
+    /** @var string Negotiated protocol version */
+    private string $protocolVersion = self::LATEST_PROTOCOL;
 
     /**
      * Register a tool.
@@ -54,43 +72,125 @@ final class MCPServer
     }
 
     /**
+     * Register a prompt template.
+     */
+    public function prompt(MCPPrompt $prompt): self
+    {
+        $this->prompts[$prompt->name] = $prompt;
+        return $this;
+    }
+
+    /**
      * Process an MCP JSON-RPC request.
      *
+     * Supports Streamable HTTP transport (single endpoint for POST/GET).
+     *
      * @param array<string, mixed> $request
+     * @param array<string, string> $headers Request headers (for version negotiation)
      * @return array<string, mixed>
      */
-    public function handle(array $request): array
+    public function handle(array $request, array $headers = []): array
     {
+        // Protocol version negotiation
+        $this->negotiateVersion($headers);
+
         $method = $request['method'] ?? '';
         $id     = $request['id'] ?? null;
 
         return match ($method) {
-            'initialize'          => $this->handleInitialize($id),
+            'initialize'          => $this->handleInitialize($id, $request['params'] ?? []),
             'tools/list'          => $this->handleToolsList($id),
             'tools/call'          => $this->handleToolsCall($id, $request['params'] ?? []),
             'resources/list'      => $this->handleResourcesList($id),
             'resources/read'      => $this->handleResourcesRead($id, $request['params'] ?? []),
+            'prompts/list'        => $this->handlePromptsList($id),
+            'prompts/get'         => $this->handlePromptsGet($id, $request['params'] ?? []),
+            'ping'                => $this->handlePing($id),
             default               => $this->errorResponse($id, -32601, "Method not found: {$method}"),
         };
     }
 
     /**
+     * Get response headers for the Streamable HTTP transport.
+     *
+     * @return array<string, string>
+     */
+    public function responseHeaders(): array
+    {
+        $headers = [
+            'Content-Type'         => 'application/json',
+            'MCP-Protocol-Version' => $this->protocolVersion,
+        ];
+
+        if ($this->sessionId !== null) {
+            $headers['MCP-Session-Id'] = $this->sessionId;
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Get current session ID.
+     */
+    public function sessionId(): ?string
+    {
+        return $this->sessionId;
+    }
+
+    /**
+     * Negotiate the protocol version from request headers.
+     *
+     * @param array<string, string> $headers
+     */
+    private function negotiateVersion(array $headers): void
+    {
+        $requested = $headers['MCP-Protocol-Version']
+            ?? $headers['mcp-protocol-version']
+            ?? null;
+
+        if ($requested !== null && in_array($requested, self::SUPPORTED_VERSIONS, true)) {
+            $this->protocolVersion = $requested;
+        }
+
+        // Session management
+        $sessionId = $headers['MCP-Session-Id']
+            ?? $headers['mcp-session-id']
+            ?? null;
+
+        if ($sessionId !== null) {
+            $this->sessionId = $sessionId;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $params
      * @return array<string, mixed>
      */
-    private function handleInitialize(mixed $id): array
+    private function handleInitialize(mixed $id, array $params): array
     {
+        // Generate session ID for stateful connections
+        $this->sessionId = bin2hex(random_bytes(16));
+
+        // Determine capabilities based on protocol version
+        $capabilities = [
+            'tools'     => ['listChanged' => false],
+            'resources' => ['listChanged' => false],
+        ];
+
+        // Prompts support added in 2025-03-26+
+        if ($this->protocolVersion !== '2024-11-05') {
+            $capabilities['prompts'] = ['listChanged' => false];
+        }
+
         return [
             'jsonrpc' => '2.0',
             'id'      => $id,
             'result'  => [
-                'protocolVersion' => '2024-11-05',
-                'capabilities'    => [
-                    'tools'     => ['listChanged' => false],
-                    'resources' => ['listChanged' => false],
-                ],
-                'serverInfo' => [
+                'protocolVersion' => $this->protocolVersion,
+                'capabilities'    => $capabilities,
+                'serverInfo'      => [
                     'name'    => 'MonkeysLegion-Apex',
-                    'version' => '2.0.0',
+                    'version' => '1.2.0',
                 ],
             ],
         ];
@@ -261,6 +361,53 @@ final class MCPServer
         }
 
         return $this->errorResponse($id, -32602, "Resource not found: {$uri}");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function handlePromptsList(mixed $id): array
+    {
+        $prompts = [];
+        foreach ($this->prompts as $prompt) {
+            $prompts[] = $prompt->toArray();
+        }
+
+        return ['jsonrpc' => '2.0', 'id' => $id, 'result' => ['prompts' => $prompts]];
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    private function handlePromptsGet(mixed $id, array $params): array
+    {
+        $name = $params['name'] ?? '';
+        $arguments = $params['arguments'] ?? [];
+
+        if (!isset($this->prompts[$name])) {
+            return $this->errorResponse($id, -32602, "Prompt not found: {$name}");
+        }
+
+        $prompt = $this->prompts[$name];
+        $messages = $prompt->resolve($arguments);
+
+        return [
+            'jsonrpc' => '2.0',
+            'id'      => $id,
+            'result'  => [
+                'description' => $prompt->description,
+                'messages'    => $messages,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function handlePing(mixed $id): array
+    {
+        return ['jsonrpc' => '2.0', 'id' => $id, 'result' => []];
     }
 
     /**
