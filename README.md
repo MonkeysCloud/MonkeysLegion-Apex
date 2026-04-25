@@ -4,11 +4,11 @@
 
 [![PHP 8.4+](https://img.shields.io/badge/PHP-8.4+-blue.svg)](https://php.net)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-363%20✓-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-478%20✓-brightgreen.svg)](#testing)
 
 ## Overview
 
-MonkeysLegion-Apex is a **provider-agnostic AI abstraction layer** that unifies LLM interactions across Anthropic, OpenAI, Google (AI Studio + Vertex AI), and Ollama behind a single, type-safe PHP 8.4 API. It provides everything you need to build production-grade AI applications: multi-agent orchestration, structured output, guardrails, cost management, streaming, memory, and more.
+MonkeysLegion-Apex is a **provider-agnostic AI abstraction layer** that unifies LLM interactions across Anthropic, OpenAI, Google (AI Studio + Vertex AI), DeepSeek, Mistral, Groq, Ollama, and any OpenAI-compatible endpoint behind a single, type-safe PHP 8.4 API. It provides everything you need to build production-grade AI applications: multi-agent orchestration, structured output, guardrails, RAG pipelines, A2A/MCP protocols, cost management, streaming, memory, and more.
 
 ---
 
@@ -35,6 +35,8 @@ MonkeysLegion-Apex is a **provider-agnostic AI abstraction layer** that unifies 
 - [Embeddings & Vector Search](#embeddings--vector-search)
 - [MCP Server](#mcp-server-model-context-protocol)
 - [MCP Client](#mcp-client)
+- [A2A Protocol](#a2a-protocol-agent-to-agent)
+- [RAG Pipeline](#rag-pipeline)
 - [Event System](#event-system)
 - [Console Commands](#console-commands)
 - [HTTP Integration](#http-integration)
@@ -161,6 +163,51 @@ $provider = new OllamaProvider(
     baseUrl: 'http://localhost:11434',      // custom Ollama URL
 );
 ```
+
+### DeepSeek
+
+```php
+use MonkeysLegion\Apex\Provider\DeepSeek\DeepSeekProvider;
+
+$provider = new DeepSeekProvider(
+    apiKey: $_ENV['DEEPSEEK_API_KEY'],
+    model:  'deepseek-chat',              // deepseek-reasoner
+);
+```
+
+### Mistral
+
+```php
+use MonkeysLegion\Apex\Provider\Mistral\MistralProvider;
+
+$provider = new MistralProvider(
+    apiKey: $_ENV['MISTRAL_API_KEY'],
+    model:  'mistral-large-latest',       // mistral-medium-latest, mistral-small-latest, codestral-latest
+);
+```
+
+### Groq
+
+```php
+use MonkeysLegion\Apex\Provider\Groq\GroqProvider;
+
+$provider = new GroqProvider(
+    apiKey: $_ENV['GROQ_API_KEY'],
+    model:  'llama-3.3-70b-versatile',    // llama-3.1-8b-instant, mixtral-8x7b-32768, gemma2-9b-it
+);
+```
+
+### Any OpenAI-Compatible API
+
+```php
+use MonkeysLegion\Apex\Provider\OpenAICompatible\GenericProvider;
+
+$provider = new GenericProvider(
+    apiKey:       $_ENV['CUSTOM_API_KEY'],
+    baseUrl:      'https://my-llm-proxy.com/v1',
+    model:        'my-custom-model',
+    providerName: 'my-provider',
+);
 
 ### Using Any Provider with AI Facade
 
@@ -1283,10 +1330,12 @@ $vectors = $manager->embedBatch(['Hello', 'World']);
 
 ## MCP Server (Model Context Protocol)
 
-Serve tools and resources via the Model Context Protocol (JSON-RPC 2.0).
+Serve tools, resources, and prompts via the Model Context Protocol.
+
+**Protocol Support:** `2025-11-25` (latest) with backward compatibility for `2024-11-05` and `2025-03-26`.
 
 ```php
-use MonkeysLegion\Apex\MCP\MCPServer;
+use MonkeysLegion\Apex\MCP\{MCPServer, MCPPrompt};
 
 $server = new MCPServer();
 
@@ -1301,36 +1350,45 @@ $server->tool('calculate', 'Perform math calculations', [
     return ['result' => eval("return {$args['expression']};")];
 });
 
-$server->tool('search_docs', 'Search documentation', [
-    'type' => 'object',
-    'properties' => [
-        'query' => ['type' => 'string'],
-    ],
-], function (array $args) {
-    return searchDocs($args['query']);
-});
-
 // Register resources
 $server->resource('config', 'file:///config.json', json_encode($config), 'application/json');
-$server->resource('readme', 'file:///README.md', file_get_contents('README.md'), 'text/markdown');
 
-// Handle incoming JSON-RPC requests
+// Register prompt templates (MCP 2025-03-26+)
+$server->prompt(new MCPPrompt(
+    name: 'summarize',
+    description: 'Summarize a document',
+    arguments: ['text' => ['description' => 'Text to summarize', 'required' => true]],
+    messages: [
+        ['role' => 'user', 'content' => ['type' => 'text', 'text' => 'Summarize: {text}']],
+    ],
+));
+
+// Handle incoming JSON-RPC requests (Streamable HTTP transport)
 $request = json_decode(file_get_contents('php://input'), true);
-$response = $server->handle($request);
+$response = $server->handle($request, getallheaders());
+
+// Set response headers
+foreach ($server->responseHeaders() as $name => $value) {
+    header("{$name}: {$value}");
+}
+echo json_encode($response);
 
 // Supported methods:
-// - initialize        → Server capabilities
+// - initialize        → Server capabilities + session ID
 // - tools/list        → List all tools
-// - tools/call        → Execute a tool
+// - tools/call        → Execute a tool (with input validation)
 // - resources/list    → List all resources
 // - resources/read    → Read a resource
+// - prompts/list      → List prompt templates
+// - prompts/get       → Resolve a prompt with arguments
+// - ping              → Health check
 ```
 
 ---
 
 ## MCP Client
 
-Connect to external MCP servers as a client.
+Connect to external MCP servers. Supports protocol version negotiation and session management.
 
 ```php
 use MonkeysLegion\Apex\MCP\MCPClient;
@@ -1340,16 +1398,159 @@ $client = new MCPClient(
     timeout: 30.0,
 );
 
-// Initialize connection
+// Initialize — negotiates protocol version + establishes session
 $capabilities = $client->initialize();
+echo $client->protocolVersion(); // '2025-11-25'
+echo $client->sessionId();       // auto-captured from server
 
-// List and call tools
+// Tools
 $tools = $client->listTools();
 $result = $client->callTool('calculate', ['expression' => '2 + 2']);
 
-// List and read resources
+// Resources
 $resources = $client->listResources();
 $content   = $client->readResource('file:///config.json');
+
+// Prompts (MCP 2025-03-26+)
+$prompts  = $client->listPrompts();
+$resolved = $client->getPrompt('summarize', ['text' => 'Long article...']);
+
+// Health check
+$client->ping();
+```
+
+---
+
+## A2A Protocol (Agent-to-Agent)
+
+Expose local agents as A2A agents for inter-agent communication.
+
+### A2A Server
+
+```php
+use MonkeysLegion\Apex\A2A\{A2AServer, AgentCard};
+use MonkeysLegion\Apex\Agent\Agent;
+
+$server = new A2AServer();
+$server->register(new Agent('researcher', 'Research topics thoroughly', $ai));
+$server->register(new Agent('writer', 'Write engaging content', $ai));
+
+// Handle incoming A2A JSON-RPC requests
+$response = $server->handle($request);
+
+// Discover registered agents
+$cards = $server->agentCards(); // Returns AgentCard[]
+
+// Supported methods:
+// - agent/discover        → List all agent capabilities
+// - tasks/send            → Submit a task to an agent
+// - tasks/get             → Query task status
+// - tasks/cancel          → Cancel a running task
+// - tasks/sendSubscribe   → Submit with SSE streaming
+```
+
+### A2A Client
+
+```php
+use MonkeysLegion\Apex\A2A\A2AClient;
+
+$client = new A2AClient();
+
+// Discover remote agents
+$agents = $client->discover('https://remote-server.com/a2a');
+foreach ($agents as $card) {
+    echo "{$card->name}: {$card->description}\n";
+}
+
+// Send a task
+$task = $client->sendTask('https://remote-server.com/a2a', 'researcher', 'Find papers on LLM safety');
+echo $task->status; // 'completed'
+echo $task->output; // Research results
+
+// Check status / cancel
+$status = $client->getTask($serverUrl, $task->id);
+$client->cancelTask($serverUrl, $task->id);
+```
+
+### Agent Card
+
+```php
+use MonkeysLegion\Apex\A2A\AgentCard;
+
+// Publish at /.well-known/agent.json for discovery
+$card = new AgentCard(
+    name: 'research-bot',
+    description: 'AI research assistant',
+    url: 'https://api.myapp.com/a2a',
+    skills: ['research', 'summarization', 'fact-checking'],
+    authentication: ['type' => 'bearer'],
+);
+
+echo $card->toJson(); // Serve as /.well-known/agent.json
+```
+
+---
+
+## RAG Pipeline
+
+Retrieve-then-generate with automatic document chunking, embedding, and context injection.
+
+### Setup
+
+```php
+use MonkeysLegion\Apex\RAG\{RAGPipeline, DocumentSplitter, RecursiveChunker};
+use MonkeysLegion\Apex\Embedding\InMemoryStore;
+
+$rag = new RAGPipeline(
+    ai:    $ai,
+    store: new InMemoryStore(),
+    splitter: new DocumentSplitter(new RecursiveChunker(maxChunkSize: 1000)),
+    topK: 5,
+    similarityThreshold: 0.7,
+);
+```
+
+### Ingest Documents
+
+```php
+// Split → Embed → Store
+$chunksStored = $rag->ingest($documentText, ['source' => 'manual.pdf', 'chapter' => 3]);
+echo "Stored {$chunksStored} chunks";
+
+// Ingest multiple documents
+$rag->ingest(file_get_contents('doc1.txt'), ['source' => 'doc1']);
+$rag->ingest(file_get_contents('doc2.txt'), ['source' => 'doc2']);
+```
+
+### Query with Context
+
+```php
+$result = $rag->query(
+    'How do I configure authentication?',
+    system: 'You are a helpful documentation assistant. Answer based on the provided context.',
+);
+
+echo $result->content();       // Generated answer
+echo $result->contextCount();  // Number of context chunks used
+echo $result->bestScore();     // Highest similarity score
+echo $result->hasContext();    // true if relevant context was found
+```
+
+### Chunking Strategies
+
+```php
+use MonkeysLegion\Apex\RAG\{FixedSizeChunker, RecursiveChunker};
+
+// Fixed-size with overlap
+$chunker = new FixedSizeChunker(chunkSize: 500, overlap: 100);
+
+// Recursive — respects document structure (paragraphs → lines → sentences)
+$chunker = new RecursiveChunker(maxChunkSize: 1000, overlap: 200);
+
+// Use with DocumentSplitter for metadata enrichment
+$splitter = new DocumentSplitter($chunker);
+$chunks = $splitter->split($text, ['source' => 'manual.pdf']);
+// Each chunk: ['text' => '...', 'metadata' => ['source' => 'manual.pdf', 'chunk_index' => 0, ...]]
 ```
 
 ---
@@ -1682,7 +1883,7 @@ foreach ($stream as $chunk) {
 
 ```
 src/
-├── AI.php                          # Main facade — generate, extract, stream, embed
+├── AI.php                          # Main facade — generate, extract, stream, embed, pipeline, agent, crew, guard, stats
 ├── Contract/                       # 12 interfaces (Provider, Memory, Middleware, Guard, etc.)
 ├── DTO/                            # 10 immutable value objects
 │   ├── Message, Response, Usage, Cost, StreamChunk
@@ -1699,6 +1900,10 @@ src/
 │   ├── Anthropic/                  # Claude models
 │   ├── OpenAI/                     # GPT, o-series models
 │   ├── Google/                     # Gemini (AI Studio + Vertex AI)
+│   ├── DeepSeek/                   # deepseek-chat, deepseek-reasoner
+│   ├── Mistral/                    # mistral-large/medium/small, codestral
+│   ├── Groq/                       # llama-3.3, mixtral, gemma2
+│   ├── OpenAICompatible/           # GenericProvider for any OpenAI-compatible API
 │   └── Ollama/                     # Local models
 ├── Tool/                           # Tool calling
 │   ├── ToolRegistry.php            # #[Tool] + #[ToolParam] discovery
@@ -1714,27 +1919,19 @@ src/
 │   ├── Guard.php                   # Input/output validator pipeline
 │   ├── GuardPipeline.php           # Configurable action pipeline
 │   ├── Validator/                  # 6 validators
-│   │   ├── PIIDetectorValidator    # Email, SSN, credit card, phone
-│   │   ├── PromptInjectionValidator# Jailbreak, ignore instructions
-│   │   ├── ToxicityValidator       # Offensive content + custom patterns
-│   │   ├── RegexValidator          # Custom regex rules
-│   │   ├── WordCountValidator      # Min/max word limits + truncation
-│   │   └── CustomValidator         # User-defined validation logic
 │   └── Action/                     # 6 guard actions
-│       ├── BlockAction, RedactAction, WarnAction
-│       ├── TruncateAction, ReplaceAction, RetryAction
 ├── Router/                         # Smart routing
 │   ├── ModelRouter.php             # 4 strategies + custom rules
 │   ├── ComplexityClassifier.php    # Heuristic input classification
 │   ├── FallbackChain.php           # Ordered provider failover
-│   ├── ModelRegistry.php           # 20+ model catalog (incl. Google/Gemini)
+│   ├── ModelRegistry.php           # 25+ model catalog
 │   └── RoutingRule.php             # Custom routing conditions
 ├── Cost/                           # Cost management
-│   ├── CostTracker.php             # Per-request cost tracking
-│   ├── PricingRegistry.php         # Model pricing (incl. Gemini, DeepSeek)
+│   ├── CostTracker.php             # Per-request cost tracking + report()
+│   ├── PricingRegistry.php         # Model pricing (25+ models)
 │   ├── BudgetManager.php           # Per-scope budget enforcement
 │   ├── CostAggregator.php          # Group by model/period
-│   └── CostReport.php             # Reports + toArray()
+│   └── CostReport.php              # Reports + toArray()
 ├── Middleware/                      # Onion-model pipeline
 │   ├── MiddlewarePipeline.php      # push() + execute()
 │   ├── MiddlewareContext.php       # Shared context + metadata bag
@@ -1745,50 +1942,48 @@ src/
 │   ├── PipelineResult.php          # Output + trace + timing
 │   ├── PipelineRunner.php          # Named pipeline registry + chain
 │   └── Step/                       # 12 step types
-│       ├── GenerateStep, ExtractStep, ClassifyStep
-│       ├── SummarizeStep, TranslateStep, GuardStep
-│       ├── ConditionalStep, LoopStep, ParallelStep
-│       ├── TransformStep, HumanInLoopStep, RouteStep
 ├── Agent/                          # Multi-agent system
 │   ├── Agent.php                   # Single agent (name, role, AI, memory, tools)
 │   ├── AgentBuilder.php            # Fluent agent construction
 │   ├── AgentRunner.php             # Lifecycle hooks (onStep, onHandoff)
-│   ├── Crew.php                    # 4 orchestration modes
+│   ├── Crew.php                    # Delegates to Orchestrators
 │   ├── CrewBuilder.php             # Fluent crew construction
 │   ├── Handoff.php                 # Agent context transfer DTO
+│   ├── Orchestration/              # Pluggable orchestration engines
+│   │   ├── OrchestratorInterface.php  # Strategy contract
+│   │   ├── SequentialOrchestrator.php # Pipeline: A → B → C
+│   │   ├── ParallelOrchestrator.php   # Fork-based with sequential fallback
+│   │   ├── HierarchicalOrchestrator.php # Manager → Workers → Synthesis
+│   │   └── ConversationalOrchestrator.php # Debate/refine loop
 │   └── Memory/                     # Agent-scoped memory
 │       ├── AgentMemory.php         # Isolated memory + system prompt injection
 │       └── AgentMemoryManager.php  # Factory-based per-agent manager
 ├── Memory/                         # Context management
-│   ├── ConversationMemory.php      # Unbounded
-│   ├── SlidingWindowMemory.php     # Token/message limited
-│   ├── SummaryMemory.php           # Auto-summarizing
-│   ├── VectorMemory.php            # Embedding-based retrieval
-│   ├── PersistentMemory.php        # PSR-16 backed
-│   └── ContextBuilder.php          # Multi-source assembly
 ├── Embedding/                      # Vector operations
+│   ├── VectorStoreInterface.php    # Unified vector store contract
 │   ├── EmbeddingManager.php        # Facade for embedding generation
-│   ├── InMemoryStore.php           # Vector store with search
+│   ├── InMemoryStore.php           # Vector store with search + delete
 │   └── Similarity.php              # Cosine, Euclidean, Dot Product
-├── MCP/                            # Model Context Protocol
-│   ├── MCPServer.php               # JSON-RPC tool/resource server
-│   └── MCPClient.php               # MCP client connector
+├── RAG/                            # Retrieval-Augmented Generation
+│   ├── ChunkingStrategy.php        # Pluggable chunking interface
+│   ├── FixedSizeChunker.php        # Fixed-size with overlap
+│   ├── RecursiveChunker.php        # Structure-aware recursive splitting
+│   ├── DocumentSplitter.php        # Chunking + metadata enrichment
+│   ├── RAGPipeline.php             # Full ingest() + query() pipeline
+│   └── RAGResult.php               # Response + context + scores
+├── MCP/                            # Model Context Protocol (2025-11-25)
+│   ├── MCPServer.php               # Tools, resources, prompts, sessions, ping
+│   ├── MCPClient.php               # Version negotiation, sessions, prompts
+│   └── MCPPrompt.php               # Prompt template with argument resolution
+├── A2A/                            # Agent-to-Agent Protocol
+│   ├── AgentCard.php               # Discovery manifest (/.well-known/agent.json)
+│   ├── A2AServer.php               # JSON-RPC handler for tasks + discovery
+│   ├── A2AClient.php               # Discover + invoke remote A2A agents
+│   ├── A2ATask.php                 # Task lifecycle (submitted → completed/failed)
+│   └── A2AMessage.php              # Inter-agent communication DTO
 ├── Event/                          # Event system
-│   ├── EventDispatcher.php         # listen() + dispatch() + wildcards
-│   ├── AIEvent.php                 # Base event interface
-│   ├── RequestCompletedEvent.php   # Success event
-│   └── RequestFailedEvent.php      # Failure event
 ├── Console/                        # CLI commands
-│   ├── ChatCommand.php             # Interactive ai:chat (framework-agnostic)
-│   ├── CostReportCommand.php       # Cost reporting ai:costs
-│   └── Cli/                        # MonkeysLegion CLI adapters
-│       ├── ChatCliCommand.php      # #[Command('ai:chat')]
-│       └── CostReportCliCommand.php# #[Command('ai:costs')]
 ├── Http/                           # Framework integration
-│   ├── AIServiceProvider.php       # DI factory registration
-│   ├── AIStreamResponse.php        # SSE HTTP response wrapper
-│   ├── AIMiddleware.php            # HTTP middleware for AI routes
-│   └── AIController.php            # Base controller with parseMessages/responseArray
 ├── Testing/FakeProvider.php        # respondWith, failWith, call tracking, reset
 └── config/ai.php                   # Default configuration
 ```
@@ -1843,7 +2038,7 @@ return [
 
 ## Testing
 
-363 tests, 705 assertions — validated across every layer of the orchestration engine.
+478 tests, 914 assertions — validated across every layer of the orchestration engine.
 
 ```bash
 # Run all tests
@@ -1869,6 +2064,10 @@ php vendor/bin/phpunit --filter=test_agent_memory_manager_factory
 | ApexPhase4 | 51 | Validators, Router, Cost, Pipeline, Agents |
 | ApexPhase5 | 30 | Google provider, Guard actions, Events, MCP, Pipeline steps |
 | ApexExtended | 154 | Deep edge cases across all layers + Agent Memory |
+| ApexV2 | 33 | Security hardening, MCP validation, ConnectionPool |
+| Apex120Orchestrator | 18 | Orchestration engines, Crew delegation, AI facade methods |
+| Apex120Protocol | 32 | A2A protocol, MCP 2025-11-25, MCPPrompt, sessions |
+| Apex120Ecosystem | 32 | RAG pipeline, vector store, providers, registries |
 
 ---
 
