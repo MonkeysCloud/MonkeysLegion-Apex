@@ -155,6 +155,42 @@ final class CohereProvider extends AbstractProvider
     }
 
     /**
+     * @return array<string, ModelInfo>
+     */
+    private function buildModelCatalog(): array
+    {
+        return [
+            'command-r-plus' => new ModelInfo(
+                name: 'command-r-plus',
+                provider: 'cohere',
+                tier: ModelTier::Power,
+                contextWindow: 128_000,
+                maxOutputTokens: 4_096,
+                inputPricePerMillion: 2.50,
+                outputPricePerMillion: 10.00,
+            ),
+            'command-r' => new ModelInfo(
+                name: 'command-r',
+                provider: 'cohere',
+                tier: ModelTier::Balanced,
+                contextWindow: 128_000,
+                maxOutputTokens: 4_096,
+                inputPricePerMillion: 0.15,
+                outputPricePerMillion: 0.60,
+            ),
+            'command-a' => new ModelInfo(
+                name: 'command-a',
+                provider: 'cohere',
+                tier: ModelTier::Power,
+                contextWindow: 256_000,
+                maxOutputTokens: 8_192,
+                inputPricePerMillion: 2.50,
+                outputPricePerMillion: 10.00,
+            ),
+        ];
+    }
+
+    /**
      * @return list<string>
      */
     protected function buildHeaders(): array
