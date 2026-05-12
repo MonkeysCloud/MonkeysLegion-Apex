@@ -164,14 +164,27 @@ final class GoogleProvider extends AbstractProvider
     }
 
     /**
+     * Build HTTP headers.
+     *
+     * Supports both API key auth (x-goog-api-key) and OAuth2 Bearer tokens.
+     * API keys from Google AI Studio start with "AIza".
+     * OAuth2 access tokens from service accounts start with "ya29." and are longer.
+     *
      * @return list<string>
      */
     protected function buildHeaders(): array
     {
-        return [
-            'Content-Type: application/json',
-            'x-goog-api-key: ' . $this->apiKey,
-        ];
+        $headers = ['Content-Type: application/json'];
+
+        // OAuth2 access tokens are typically 100+ chars and start with "ya29."
+        // API keys are shorter (~39 chars) and start with "AIza".
+        if (strlen($this->apiKey) > 80 || str_starts_with($this->apiKey, 'ya29.')) {
+            $headers[] = 'Authorization: Bearer ' . $this->apiKey;
+        } else {
+            $headers[] = 'x-goog-api-key: ' . $this->apiKey;
+        }
+
+        return $headers;
     }
 
     /**
