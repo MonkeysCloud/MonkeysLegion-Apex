@@ -23,6 +23,7 @@ use MonkeysLegion\Apex\Cost\CostTracker;
 use MonkeysLegion\Apex\DTO\EmbeddingVector;
 use MonkeysLegion\Apex\DTO\Message;
 use MonkeysLegion\Apex\DTO\Response;
+use MonkeysLegion\Apex\DTO\StreamChunk;
 use MonkeysLegion\Apex\Enum\Role;
 use MonkeysLegion\Apex\Exception\SchemaValidationException;
 use MonkeysLegion\Apex\Guard\Guard;
@@ -145,6 +146,38 @@ final class AI
 
         $generator = $this->provider->streamChat($messages, $options);
         return new TextStream($generator);
+    }
+
+    /**
+     * Chat alias for generate() — provided for API compatibility.
+     *
+     * @param list<Message>         $messages
+     * @param array<string, mixed>  $options
+     */
+    public function chat(array $messages, array $options = []): Response
+    {
+        $model = $options['model'] ?? null;
+        unset($options['model']);
+        return $this->generate($messages, model: $model, options: $options);
+    }
+
+    /**
+     * streamChat alias for stream() — provided for API compatibility.
+     *
+     * Returns the raw StreamChunk generator for direct iteration.
+     *
+     * @param list<Message>         $messages
+     * @param array<string, mixed>  $options
+     * @return \Generator<StreamChunk>
+     */
+    public function streamChat(array $messages, array $options = []): \Generator
+    {
+        $model = $options['model'] ?? null;
+        if ($model !== null) {
+            $options['model'] = $model;
+        }
+
+        return $this->provider->streamChat($messages, $options);
     }
 
     // ─── Structured Output ───────────────────────────────
