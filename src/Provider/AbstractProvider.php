@@ -82,6 +82,7 @@ abstract class AbstractProvider implements ProviderInterface
                     CURLOPT_SSL_VERIFYHOST => 2,
                     CURLOPT_FORBID_REUSE   => false,
                     CURLOPT_TCP_KEEPALIVE  => 1,
+                    CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 ]);
 
                 if (!empty($body)) {
@@ -173,6 +174,7 @@ abstract class AbstractProvider implements ProviderInterface
             CURLOPT_CUSTOMREQUEST  => strtoupper($method),
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
             CURLOPT_WRITEFUNCTION  => function ($ch, string $data) use (&$lines, &$buffer): int {
                 $buffer .= $data;
 
