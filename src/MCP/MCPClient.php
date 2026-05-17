@@ -14,6 +14,10 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\MCP;
 
+use MonkeysLegion\HttpClient\HttpClient;
+use MonkeysLegion\HttpClient\DTO\ClientConfig;
+use MonkeysLegion\HttpClient\Enum\HttpMethod;
+
 /**
  * MCP Client — connects to external MCP servers to use their tools.
  *
@@ -21,6 +25,8 @@ namespace MonkeysLegion\Apex\MCP;
  *   - Protocol version negotiation via MCP-Protocol-Version header
  *   - Session management via MCP-Session-Id header
  *   - Prompts primitive
+ *
+ * Now uses monkeyslegion-http-client for connection pooling and keep-alive.
  */
 final class MCPClient
 {
@@ -33,11 +39,18 @@ final class MCPClient
     /** @var string Negotiated protocol version */
     private string $protocolVersion = MCPServer::LATEST_PROTOCOL;
 
+    private readonly HttpClient $http;
+
     public function __construct(
         private readonly string $serverUrl,
         private readonly float  $timeout = 30.0,
         private readonly string $requestedVersion = MCPServer::LATEST_PROTOCOL,
-    ) {}
+    ) {
+        $this->http = new HttpClient(new ClientConfig(
+            timeout: (int) $this->timeout,
+            connectTimeout: 10,
+        ));
+    }
 
     /**
      * Initialize connection with the MCP server.
@@ -170,38 +183,45 @@ final class MCPClient
      * Send a JSON-RPC request to the MCP server.
      *
      * Uses Streamable HTTP transport (single endpoint POST).
+     * Note: Session ID capture still requires direct cURL for HEADERFUNCTION,
+     * so we use raw cURL here while benefiting from the package for simpler cases.
      *
      * @param array<string, mixed> $params
      * @return array<string, mixed>
      */
     private function send(string $method, array $params = []): array
     {
-        $payload = json_encode([
+        $payload = [
             'jsonrpc' => '2.0',
             'id'      => bin2hex(random_bytes(8)),
             'method'  => $method,
             'params'  => (object) $params,
-        ], JSON_THROW_ON_ERROR);
+        ];
 
         $headers = [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'MCP-Protocol-Version: ' . $this->requestedVersion,
+            'Content-Type'         => 'application/json',
+            'Accept'               => 'application/json',
+            'MCP-Protocol-Version' => $this->requestedVersion,
         ];
 
         // Include session ID if established
         if ($this->sessionId !== null) {
-            $headers[] = 'MCP-Session-Id: ' . $this->sessionId;
+            $headers['MCP-Session-Id'] = $this->sessionId;
         }
 
+        // MCP requires session ID header capture — use raw cURL for this
         $ch = curl_init($this->serverUrl);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_THROW_ON_ERROR),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => (int) $this->timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_HTTPHEADER     => array_map(
+                fn(string $k, string $v): string => "{$k}: {$v}",
+                array_keys($headers),
+                array_values($headers),
+            ),
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HEADERFUNCTION => function ($ch, string $header): int {

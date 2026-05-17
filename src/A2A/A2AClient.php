@@ -14,16 +14,27 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\A2A;
 
+use MonkeysLegion\HttpClient\HttpClient;
+use MonkeysLegion\HttpClient\DTO\ClientConfig;
+
 /**
  * A2A Client — discovers and invokes remote A2A agents.
  *
  * Implements the client side of the Agent-to-Agent (A2A) protocol.
+ * Now uses monkeyslegion-http-client for connection pooling and keep-alive.
  */
 final class A2AClient
 {
+    private readonly HttpClient $http;
+
     public function __construct(
         private readonly float $timeout = 30.0,
-    ) {}
+    ) {
+        $this->http = new HttpClient(new ClientConfig(
+            timeout: (int) $this->timeout,
+            connectTimeout: 10,
+        ));
+    }
 
     /**
      * Discover agents from a remote A2A server.
@@ -111,42 +122,32 @@ final class A2AClient
      */
     private function send(string $serverUrl, string $method, array $params = []): array
     {
-        $payload = json_encode([
+        $payload = [
             'jsonrpc' => '2.0',
             'id'      => bin2hex(random_bytes(8)),
             'method'  => $method,
             'params'  => (object) $params,
-        ], JSON_THROW_ON_ERROR);
+        ];
 
-        $ch = curl_init($serverUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => (int) $this->timeout,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
+        $response = $this->http
+            ->newRequest()
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ])
+            ->withJson($payload)
+            ->send(\MonkeysLegion\HttpClient\Enum\HttpMethod::POST, $serverUrl);
 
-        $body = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err  = curl_error($ch);
-        curl_close($ch);
-
-        if ($body === false || $code >= 400) {
-            throw new \RuntimeException("A2A request failed: {$err} (HTTP {$code})");
+        if ($response->isFailed) {
+            throw new \RuntimeException("A2A request failed: HTTP {$response->statusCode}");
         }
 
-        $response = json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR);
-        if (isset($response['error'])) {
-            throw new \RuntimeException("A2A error: {$response['error']['message']}");
+        /** @var array<string, mixed> */
+        $data = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
+        if (isset($data['error'])) {
+            throw new \RuntimeException("A2A error: {$data['error']['message']}");
         }
 
-        return $response['result'] ?? [];
+        return $data['result'] ?? [];
     }
 }
