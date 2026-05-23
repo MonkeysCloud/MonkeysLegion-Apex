@@ -398,7 +398,6 @@ final class ApexV2Test extends TestCase
 
         // Use reflection to verify headers contain the API key
         $ref = new \ReflectionMethod($provider, 'buildHeaders');
-        $ref->setAccessible(true);
         $headers = $ref->invoke($provider);
 
         $hasApiKeyHeader = false;

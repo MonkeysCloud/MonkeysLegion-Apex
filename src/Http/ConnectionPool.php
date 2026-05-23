@@ -60,7 +60,6 @@ final class ConnectionPool
         if (count($this->handles) >= $this->maxConnections) {
             $key = array_key_first($this->handles);
             if ($key !== null) {
-                curl_close($this->handles[$key]);
                 unset($this->handles[$key]);
             }
         }
@@ -82,9 +81,6 @@ final class ConnectionPool
      */
     public function close(): void
     {
-        foreach ($this->handles as $handle) {
-            curl_close($handle);
-        }
         $this->handles = [];
 
         if ($this->multiHandle !== null) {

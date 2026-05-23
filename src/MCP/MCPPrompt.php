@@ -14,10 +14,14 @@ declare(strict_types=1);
 
 namespace MonkeysLegion\Apex\MCP;
 
+use MonkeysLegion\Mcp\Prompt\PromptDefinition;
+
 /**
  * MCP Prompt — reusable prompt template for MCP servers.
  *
- * Part of the MCP 2025-11-25 specification.
+ * @deprecated 1.3.0 Use {@see \MonkeysLegion\Mcp\Prompt\PromptDefinition} from monkeyslegion-mcp instead.
+ *             This class now includes a toPromptDefinition() bridge method.
+ *             Install: composer require monkeyscloud/monkeyslegion-mcp
  */
 final readonly class MCPPrompt
 {
@@ -35,40 +39,38 @@ final readonly class MCPPrompt
     /**
      * Resolve the prompt with given argument values.
      *
+     * @deprecated Use PromptDefinition::resolve() instead.
+     *
      * @param array<string, string> $values
      * @return list<array{role: string, content: array{type: string, text: string}}>
      */
     public function resolve(array $values = []): array
     {
-        $resolved = [];
-        foreach ($this->messages as $msg) {
-            $text = $msg['content']['text'] ?? '';
-            foreach ($values as $key => $value) {
-                $text = str_replace("{{$key}}", $value, $text);
-            }
-            $resolved[] = [
-                'role'    => $msg['role'],
-                'content' => ['type' => 'text', 'text' => $text],
-            ];
-        }
-        return $resolved;
+        return $this->toPromptDefinition()->resolve($values);
     }
 
     /**
      * Serialize to MCP-compatible format.
      *
+     * @deprecated Use PromptDefinition::toArray() instead.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
     {
-        return [
-            'name'        => $this->name,
-            'description' => $this->description,
-            'arguments'   => array_map(fn($key, $arg) => [
-                'name'        => $key,
-                'description' => $arg['description'],
-                'required'    => $arg['required'] ?? false,
-            ], array_keys($this->arguments), $this->arguments),
-        ];
+        return $this->toPromptDefinition()->toArray();
+    }
+
+    /**
+     * Convert to the new PromptDefinition from monkeyslegion-mcp.
+     */
+    public function toPromptDefinition(): PromptDefinition
+    {
+        return new PromptDefinition(
+            name: $this->name,
+            description: $this->description,
+            arguments: $this->arguments,
+            messages: $this->messages,
+        );
     }
 }

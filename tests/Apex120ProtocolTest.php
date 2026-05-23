@@ -307,7 +307,7 @@ final class Apex120ProtocolTest extends TestCase
     {
         $server = new MCPServer();
         $result = $server->handle(['method' => 'initialize', 'id' => 1]);
-        $this->assertSame('2025-11-25', $result['result']['protocolVersion']);
+        $this->assertSame('2025-03-26', $result['result']['protocolVersion']);
     }
 
     public function test_mcp_server_response_headers(): void
@@ -334,7 +334,7 @@ final class Apex120ProtocolTest extends TestCase
         $server = new MCPServer();
         $result = $server->handle(
             ['method' => 'initialize', 'id' => 1],
-            ['MCP-Protocol-Version' => '2025-11-25'],
+            ['MCP-Protocol-Version' => '2025-03-26'],
         );
         $this->assertArrayHasKey('prompts', $result['result']['capabilities']);
     }
