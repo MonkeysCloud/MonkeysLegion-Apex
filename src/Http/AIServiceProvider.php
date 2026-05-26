@@ -17,12 +17,19 @@ declare(strict_types=1);
 namespace MonkeysLegion\Apex\Http;
 
 use MonkeysLegion\Apex\AI;
+use MonkeysLegion\Apex\Config\ConfigResolver;
 use MonkeysLegion\Apex\Contract\ProviderInterface;
 use MonkeysLegion\Apex\Cost\CostTracker;
 use MonkeysLegion\Apex\Cost\PricingRegistry;
 
 /**
  * Service provider — wires AI services into the framework DI container.
+ *
+ * Configuration is resolved with the following priority:
+ *   1. Manual overrides passed via `$config` constructor argument
+ *   2. MLC file (`ai.mlc`) — if MonkeysLegion MLC parser is installed
+ *   3. PHP file (`config/ai.php`) — traditional PHP array
+ *   4. Hardcoded sensible defaults
  *
  * Usage in MonkeysLegion:
  *   $container->register(new AIServiceProvider($config));
@@ -41,11 +48,16 @@ final class AIServiceProvider
     private readonly array $config;
 
     /**
-     * @param array<string, mixed> $config
+     * @param array<string, mixed> $config     Manual overrides (highest priority).
+     * @param string|null          $configDir  Path to config directory. When null,
+     *                                         auto-discovered from the package root.
      */
-    public function __construct(array $config = [])
+    public function __construct(array $config = [], ?string $configDir = null)
     {
-        $this->config = array_merge($this->defaults(), $config);
+        $this->config = ConfigResolver::resolve(
+            configDir: $configDir,
+            overrides: $config,
+        );
     }
 
     /**
@@ -84,17 +96,4 @@ final class AIServiceProvider
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function defaults(): array
-    {
-        return [
-            'provider'   => null,
-            'api_key'    => '',
-            'model'      => 'claude-sonnet-4',
-            'max_budget' => 100.0,
-            'rate_limit' => 60,
-        ];
-    }
 }

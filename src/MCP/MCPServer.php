@@ -32,7 +32,7 @@ final class MCPServer
 
     public function __construct()
     {
-        $this->delegate = new BaseServer(new ServerInfo('MonkeysLegion-Apex', '1.2.0'));
+        $this->delegate = new BaseServer(new ServerInfo('MonkeysLegion-Apex', '1.1.0'));
     }
 
     /**

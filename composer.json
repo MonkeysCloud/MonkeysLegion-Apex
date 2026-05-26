@@ -25,6 +25,8 @@
     "suggest": {
         "monkeyscloud/monkeyslegion-cache": "^2.0 — Required for semantic caching middleware",
         "monkeyscloud/monkeyslegion-cli": "Required for ai:chat and ai:costs console commands",
+        "monkeyscloud/monkeyslegion-mlc": "^3.2 — Required for MLC config file support (ai.mlc)",
+        "monkeyscloud/monkeyslegion-env": "^2.0 — Required for env variable resolution in MLC config",
         "monkeyscloud/monkeyslegion-telemetry": "^2.0 — Required for distributed tracing, metrics, and structured logging",
         "ext-pcntl": "Required for parallel tool execution",
         "ext-sockets": "Required for parallel tool execution IPC"
