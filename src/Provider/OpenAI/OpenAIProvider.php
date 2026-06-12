@@ -98,8 +98,9 @@ final class OpenAIProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
+        $model = $this->embeddingModel ?? 'text-embedding-3-small';
         $raw = $this->request('POST', '/v1/embeddings', [
-            'model' => 'text-embedding-3-small',
+            'model' => $model,
             'input' => $inputs,
         ]);
 
@@ -109,7 +110,7 @@ final class OpenAIProvider extends AbstractProvider
                 input:      $inputs[$i] ?? '',
                 vector:     $entry['embedding'],
                 dimensions: count($entry['embedding']),
-                model:      $raw['model'] ?? 'text-embedding-3-small',
+                model:      $raw['model'] ?? $model,
             );
         }
 

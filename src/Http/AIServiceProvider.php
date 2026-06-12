@@ -84,6 +84,7 @@ final class AIServiceProvider
                     $provider = new $providerClass(
                         apiKey: $this->config['api_key'] ?? '',
                         model:  $this->config['model'] ?? 'claude-sonnet-4',
+                        embeddingModel: $this->config['embedding_model'] ?? null,
                     );
                 }
 

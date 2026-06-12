@@ -49,6 +49,7 @@ final class GoogleProvider extends AbstractProvider
         string  $apiVersion = 'v1beta',
         ?string $project = null,
         ?string $location = null,
+        ?string $embeddingModel = null,
     ) {
         // Detect Vertex AI mode
         $this->isVertex = $project !== null && $location !== null;
@@ -58,7 +59,13 @@ final class GoogleProvider extends AbstractProvider
             $baseUrl = "https://{$location}-aiplatform.googleapis.com";
         }
 
-        parent::__construct($apiKey, $model, $baseUrl, $timeout);
+        parent::__construct(
+            apiKey: $apiKey,
+            model: $model,
+            baseUrl: $baseUrl,
+            timeout: $timeout,
+            embeddingModel: $embeddingModel,
+        );
     }
 
     public function name(): string
@@ -125,15 +132,17 @@ final class GoogleProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
-        $model  = 'text-embedding-004';
+        $model  = $this->embeddingModel ?? 'text-embedding-004';
+        $modelName = str_starts_with($model, 'models/') ? $model : "models/{$model}";
         $body   = [
             'requests' => array_map(fn(string $input) => [
-                'model'   => "models/{$model}",
+                'model'   => $modelName,
                 'content' => ['parts' => [['text' => $input]]],
             ], $inputs),
         ];
 
-        $raw = $this->request('POST', "/{$this->apiVersion}/models/{$model}:batchEmbedContents", $body);
+        $endpointModel = str_starts_with($model, 'models/') ? substr($model, 7) : $model;
+        $raw = $this->request('POST', "/{$this->apiVersion}/models/{$endpointModel}:batchEmbedContents", $body);
 
         $vectors = [];
         foreach ($raw['embeddings'] ?? [] as $i => $embedding) {

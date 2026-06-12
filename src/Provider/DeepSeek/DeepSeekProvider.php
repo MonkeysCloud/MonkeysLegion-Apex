@@ -31,8 +31,17 @@ final class DeepSeekProvider extends GenericProvider
         ?string $baseUrl = null,
         ?float  $timeout = null,
         ?int    $maxRetries = null,
+        ?string $embeddingModel = null,
     ) {
-        parent::__construct($apiKey, $model, $baseUrl ?? static::DEFAULT_BASE_URL, $timeout, $maxRetries, 'deepseek');
+        parent::__construct(
+            apiKey: $apiKey,
+            model: $model,
+            baseUrl: $baseUrl ?? static::DEFAULT_BASE_URL,
+            timeout: $timeout,
+            maxRetries: $maxRetries,
+            providerName: 'deepseek',
+            embeddingModel: $embeddingModel,
+        );
     }
 
     public function name(): string

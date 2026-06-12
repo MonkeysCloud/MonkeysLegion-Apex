@@ -42,8 +42,16 @@ final class CohereProvider extends AbstractProvider
         ?string $baseUrl = null,
         ?float  $timeout = null,
         ?int    $maxRetries = null,
+        ?string $embeddingModel = null,
     ) {
-        parent::__construct($apiKey, $model, $baseUrl, $timeout, $maxRetries);
+        parent::__construct(
+            apiKey: $apiKey,
+            model: $model,
+            baseUrl: $baseUrl,
+            timeout: $timeout,
+            maxRetries: $maxRetries,
+            embeddingModel: $embeddingModel,
+        );
     }
 
     public function name(): string
@@ -111,8 +119,9 @@ final class CohereProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
+        $model = $this->embeddingModel ?? ($this->model === 'command-r-plus' ? 'embed-v4.0' : $this->model);
         $raw = $this->request('POST', '/v2/embed', [
-            'model' => $this->model === 'command-r-plus' ? 'embed-v4.0' : $this->model,
+            'model' => $model,
             'texts' => $inputs,
             'input_type' => 'search_document',
             'embedding_types' => ['float'],

@@ -34,23 +34,27 @@ return [
         'openai' => [
             'api_key'  => env('OPENAI_API_KEY', ''),
             'model'    => env('OPENAI_MODEL', 'gpt-4.1'),
+            'embedding_model' => env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
             'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
             'timeout'  => 30.0,
         ],
         'ollama' => [
             'model'    => env('OLLAMA_MODEL', 'llama3'),
+            'embedding_model' => env('OLLAMA_EMBEDDING_MODEL', 'llama3'),
             'base_url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
             'timeout'  => 60.0,
         ],
         'google' => [
             'api_key'  => env('GOOGLE_API_KEY', ''),
             'model'    => env('GOOGLE_MODEL', 'gemini-2.5-flash'),
+            'embedding_model' => env('GOOGLE_EMBEDDING_MODEL', 'text-embedding-004'),
             'base_url' => env('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com'),
             'timeout'  => 30.0,
         ],
         'vertex' => [
             'api_key'  => env('VERTEX_API_KEY', ''),
             'model'    => env('VERTEX_MODEL', 'gemini-2.5-flash'),
+            'embedding_model' => env('VERTEX_EMBEDDING_MODEL', 'text-embedding-004'),
             'project'  => env('VERTEX_PROJECT', ''),
             'location' => env('VERTEX_LOCATION', 'us-central1'),
             'timeout'  => 30.0,

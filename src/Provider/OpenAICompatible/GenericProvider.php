@@ -46,8 +46,16 @@ class GenericProvider extends AbstractProvider
         ?float  $timeout = null,
         ?int    $maxRetries = null,
         string  $providerName = 'openai-compatible',
+        ?string $embeddingModel = null,
     ) {
-        parent::__construct($apiKey, $model, $baseUrl, $timeout, $maxRetries);
+        parent::__construct(
+            apiKey: $apiKey,
+            model: $model,
+            baseUrl: $baseUrl,
+            timeout: $timeout,
+            maxRetries: $maxRetries,
+            embeddingModel: $embeddingModel,
+        );
         $this->providerName = $providerName;
     }
 
@@ -115,8 +123,9 @@ class GenericProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
+        $model = $this->embeddingModel ?? $this->model;
         $raw = $this->request('POST', '/v1/embeddings', [
-            'model' => $this->model,
+            'model' => $model,
             'input' => $inputs,
         ]);
 
@@ -126,7 +135,7 @@ class GenericProvider extends AbstractProvider
                 input:      $inputs[$i] ?? '',
                 vector:     $entry['embedding'],
                 dimensions: count($entry['embedding']),
-                model:      $raw['model'] ?? $this->model,
+                model:      $raw['model'] ?? $model,
             );
         }
 
