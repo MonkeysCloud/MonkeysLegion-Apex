@@ -18,7 +18,6 @@ namespace MonkeysLegion\Apex\Http;
 
 use MonkeysLegion\Apex\AI;
 use MonkeysLegion\Apex\Config\ConfigResolver;
-use MonkeysLegion\Apex\Contract\ProviderInterface;
 use MonkeysLegion\Apex\Cost\CostTracker;
 use MonkeysLegion\Apex\Cost\PricingRegistry;
 
