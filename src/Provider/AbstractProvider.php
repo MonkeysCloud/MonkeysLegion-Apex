@@ -33,6 +33,7 @@ abstract class AbstractProvider implements ProviderInterface
     protected string $model;
     protected float $timeout = 30.0;
     protected int $maxRetries = 3;
+    protected ?string $embeddingModel = null;
 
     public function __construct(
         string $apiKey,
@@ -40,12 +41,30 @@ abstract class AbstractProvider implements ProviderInterface
         ?string $baseUrl = null,
         ?float $timeout = null,
         ?int $maxRetries = null,
+        ?string $embeddingModel = null,
     ) {
-        $this->apiKey     = $apiKey;
-        $this->model      = $model;
-        $this->baseUrl    = $baseUrl ?? static::DEFAULT_BASE_URL;
-        $this->timeout    = $timeout ?? $this->timeout;
-        $this->maxRetries = $maxRetries ?? $this->maxRetries;
+        $this->apiKey         = $apiKey;
+        $this->model          = $model;
+        $this->baseUrl        = $baseUrl ?? static::DEFAULT_BASE_URL;
+        $this->timeout        = $timeout ?? $this->timeout;
+        $this->maxRetries     = $maxRetries ?? $this->maxRetries;
+        $this->embeddingModel = $embeddingModel;
+    }
+
+    /**
+     * Get the embedding model.
+     */
+    public function getEmbeddingModel(): ?string
+    {
+        return $this->embeddingModel;
+    }
+
+    /**
+     * Set the embedding model.
+     */
+    public function setEmbeddingModel(?string $embeddingModel): void
+    {
+        $this->embeddingModel = $embeddingModel;
     }
 
     /**

@@ -36,8 +36,15 @@ final class OllamaProvider extends AbstractProvider
         string $model = 'llama3',
         ?string $baseUrl = null,
         ?float $timeout = null,
+        ?string $embeddingModel = null,
     ) {
-        parent::__construct('', $model, $baseUrl, $timeout);
+        parent::__construct(
+            apiKey: '',
+            model: $model,
+            baseUrl: $baseUrl,
+            timeout: $timeout,
+            embeddingModel: $embeddingModel,
+        );
     }
 
     public function name(): string
@@ -102,9 +109,10 @@ final class OllamaProvider extends AbstractProvider
      */
     public function embed(array $inputs): array
     {
+        $model = $this->embeddingModel ?? $this->model;
         // Use batch endpoint (/api/embed) which accepts multiple inputs at once
         $raw = $this->request('POST', '/api/embed', [
-            'model'  => $this->model,
+            'model'  => $model,
             'input'  => $inputs,
         ]);
 
@@ -116,7 +124,7 @@ final class OllamaProvider extends AbstractProvider
                     input:      $inputs[$i] ?? '',
                     vector:     $embedding,
                     dimensions: count($embedding),
-                    model:      $this->model,
+                    model:      $model,
                 );
             }
         } elseif (isset($raw['embedding'])) {
@@ -125,7 +133,7 @@ final class OllamaProvider extends AbstractProvider
                 input:      $inputs[0] ?? '',
                 vector:     $raw['embedding'],
                 dimensions: count($raw['embedding']),
-                model:      $this->model,
+                model:      $model,
             );
         }
         return $vectors;

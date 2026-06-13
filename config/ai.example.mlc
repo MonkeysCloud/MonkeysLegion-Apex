@@ -23,6 +23,7 @@ ai {
         openai {
             api_key  = ${OPENAI_API_KEY:-}
             model    = ${OPENAI_MODEL:-gpt-4.1}
+            embedding_model = ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
             base_url = ${OPENAI_BASE_URL:-https://api.openai.com}
             timeout  = 30
         }
@@ -30,6 +31,7 @@ ai {
         google {
             api_key  = ${GOOGLE_API_KEY:-}
             model    = ${GOOGLE_MODEL:-gemini-2.5-flash}
+            embedding_model = ${GOOGLE_EMBEDDING_MODEL:-text-embedding-004}
             base_url = ${GOOGLE_BASE_URL:-https://generativelanguage.googleapis.com}
             timeout  = 30
         }
@@ -37,6 +39,7 @@ ai {
         vertex {
             api_key  = ${VERTEX_API_KEY:-}
             model    = ${VERTEX_MODEL:-gemini-2.5-flash}
+            embedding_model = ${VERTEX_EMBEDDING_MODEL:-text-embedding-004}
             project  = ${VERTEX_PROJECT:-}
             location = ${VERTEX_LOCATION:-us-central1}
             timeout  = 30
@@ -44,6 +47,7 @@ ai {
 
         ollama {
             model    = ${OLLAMA_MODEL:-llama3}
+            embedding_model = ${OLLAMA_EMBEDDING_MODEL:-llama3}
             base_url = ${OLLAMA_BASE_URL:-http://localhost:11434}
             timeout  = 60
         }
@@ -79,6 +83,7 @@ ai {
         # cohere {
         #     api_key  = ${COHERE_API_KEY:-}
         #     model    = ${COHERE_MODEL:-command-r-plus}
+        #     embedding_model = ${COHERE_EMBEDDING_MODEL:-embed-v4.0}
         #     base_url = ${COHERE_BASE_URL:-https://api.cohere.com}
         #     timeout  = 30
         # }

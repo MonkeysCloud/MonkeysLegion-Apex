@@ -178,23 +178,27 @@ final class ConfigResolver
                 'openai' => [
                     'api_key'  => '',
                     'model'    => 'gpt-4.1',
+                    'embedding_model' => 'text-embedding-3-small',
                     'base_url' => 'https://api.openai.com',
                     'timeout'  => 30.0,
                 ],
                 'ollama' => [
                     'model'    => 'llama3',
+                    'embedding_model' => 'llama3',
                     'base_url' => 'http://localhost:11434',
                     'timeout'  => 60.0,
                 ],
                 'google' => [
                     'api_key'  => '',
                     'model'    => 'gemini-2.5-flash',
+                    'embedding_model' => 'text-embedding-004',
                     'base_url' => 'https://generativelanguage.googleapis.com',
                     'timeout'  => 30.0,
                 ],
                 'vertex' => [
                     'api_key'  => '',
                     'model'    => 'gemini-2.5-flash',
+                    'embedding_model' => 'text-embedding-004',
                     'project'  => '',
                     'location' => 'us-central1',
                     'timeout'  => 30.0,
